@@ -1,0 +1,1986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Tracker & FIRE Calculator</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000000;
+            min-height: 100vh;
+            padding: 24px 16px;
+        }
+
+        .container {
+            max-width: 820px;
+            margin: 0 auto;
+            background: #0a0a0a;
+            border-radius: 28px;
+            padding: 48px 40px;
+            box-shadow: 0 24px 80px rgba(190, 242, 2, 0.08);
+            border: 1px solid #1a1a1a;
+        }
+
+        h1 {
+            color: #ffffff;
+            margin-bottom: 44px;
+            font-size: 34px;
+            font-weight: 800;
+            letter-spacing: -0.8px;
+        }
+
+        .input-group { margin-bottom: 26px; }
+
+        label {
+            display: block;
+            color: #a0a0a0;
+            font-weight: 500;
+            margin-bottom: 10px;
+            font-size: 14px;
+            letter-spacing: 0.3px;
+        }
+
+        input[type="number"],
+        input[type="text"] {
+            width: 100%;
+            padding: 18px 20px;
+            border: 2px solid #1a1a1a;
+            border-radius: 14px;
+            font-size: 16px;
+            transition: all 0.3s;
+            background: #0f0f0f;
+            color: #ffffff;
+        }
+
+        input[type="number"]:focus,
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #bef202;
+            background: #0a0a0a;
+            box-shadow: 0 0 0 4px rgba(190, 242, 2, 0.08);
+        }
+
+        input::placeholder { color: #404040; }
+
+        /* ── RESULT CARD ── */
+        .result-box {
+            background: linear-gradient(145deg, #bef202 0%, #9ecc00 100%);
+            color: #000000;
+            padding: 44px 40px;
+            border-radius: 28px;
+            margin: 44px 0;
+            text-align: center;
+            box-shadow: 0 16px 60px rgba(190, 242, 2, 0.25);
+            animation: fadeSlideUp 0.5s ease both;
+        }
+
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-box h2 {
+            font-size: 13px;
+            margin-bottom: 10px;
+            opacity: 0.65;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .result-box .amount {
+            font-size: 52px;
+            font-weight: 900;
+            margin: 14px 0 6px;
+            letter-spacing: -1.5px;
+            line-height: 1;
+        }
+
+        .result-box .years-label {
+            font-size: 15px;
+            opacity: 0.6;
+            font-weight: 500;
+            margin-bottom: 36px;
+        }
+
+        /* ── INCOME SECTION ── */
+        .income-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 22px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .income-title {
+            font-size: 12px;
+            opacity: 0.7;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .toggle-buttons {
+            display: flex;
+            gap: 4px;
+            background: rgba(0,0,0,0.15);
+            padding: 4px;
+            border-radius: 10px;
+        }
+
+        .toggle-btn {
+            padding: 8px 18px;
+            border: none;
+            background: transparent;
+            color: rgba(0,0,0,0.5);
+            font-size: 13px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+
+        .toggle-btn.active {
+            background: #000000;
+            color: #bef202;
+        }
+
+        /* ── INCOME CARDS ── */
+        .income-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            text-align: left;
+        }
+
+        .income-card {
+            padding: 22px 20px;
+            border-radius: 18px;
+            background: rgba(0,0,0,0.55);
+            border: 1px solid rgba(255,255,255,0.06);
+            backdrop-filter: blur(10px);
+            transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+            cursor: default;
+        }
+
+        .income-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 14px 36px rgba(0,0,0,0.55);
+            border-color: rgba(190,242,2,0.35);
+        }
+
+        .income-card .card-label {
+            font-size: 11px;
+            opacity: 0.5;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 12px;
+            color: #ffffff;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .income-card .card-value {
+            font-size: 22px;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: -0.5px;
+            line-height: 1.2;
+        }
+
+        /* ── CUSTOM ROI ── */
+        .custom-roi-row {
+            margin-top: 26px;
+            padding-top: 22px;
+            border-top: 1px solid rgba(0,0,0,0.25);
+        }
+
+        .custom-roi-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            cursor: pointer;
+            margin-bottom: 14px;
+            color: rgba(0,0,0,0.7);
+            font-weight: 700;
+        }
+
+        .custom-roi-label input[type="checkbox"] {
+            width: 18px; height: 18px;
+            accent-color: #000;
+            cursor: pointer;
+        }
+
+        .custom-roi-input-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .custom-roi-input-row input[type="number"] {
+            width: 90px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(0,0,0,0.3);
+            background: rgba(0,0,0,0.2);
+            color: #000;
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .custom-roi-input-row input[type="number"]:focus {
+            outline: none;
+            border-color: rgba(0,0,0,0.5);
+            box-shadow: none;
+        }
+
+        .custom-roi-pct   { font-size: 15px; color: rgba(0,0,0,0.6); font-weight: 600; }
+        .custom-roi-value { font-size: 20px; font-weight: 800; color: #000; margin-left: 8px; }
+
+        /* ── CHART ── */
+        .chart-container {
+            margin: 40px 0;
+            position: relative;
+            height: 440px;
+            background: #0d0d0d;
+            border-radius: 24px;
+            padding: 28px 24px 20px;
+            border: 1px solid #1e1e1e;
+            animation: fadeSlideUp 0.5s ease 0.15s both;
+        }
+
+        /* ── FIRE SECTION ── */
+        .fire-section {
+            border-top: 1px solid #1a1a1a;
+            padding-top: 44px;
+            margin-top: 44px;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 28px;
+        }
+
+        .checkbox-container input[type="checkbox"] {
+            width: 26px; height: 26px;
+            margin-right: 14px;
+            cursor: pointer;
+            accent-color: #bef202;
+        }
+
+        .checkbox-container label {
+            margin: 0;
+            cursor: pointer;
+            font-size: 20px;
+            color: #ffffff;
+            font-weight: 700;
+        }
+
+        .fire-inputs {
+            background: #0f0f0f;
+            padding: 36px;
+            border-radius: 24px;
+            margin-top: 24px;
+            border: 1px solid #1a1a1a;
+        }
+
+        .fire-result {
+            background: #0f0f0f;
+            border: 2px solid #bef202;
+            padding: 36px;
+            border-radius: 24px;
+            margin-top: 28px;
+            animation: fadeSlideUp 0.4s ease both;
+        }
+
+        .fire-result h3 { color: #bef202; margin-bottom: 14px; font-size: 22px; font-weight: 700; }
+        .fire-result p  { color: #d0d0d0; line-height: 1.9; font-size: 15px; }
+
+        .fire-year {
+            font-size: 56px;
+            font-weight: 900;
+            color: #bef202;
+            margin: 16px 0;
+            letter-spacing: -2px;
+        }
+
+        /* ── FIRE PREVIEW ── */
+        .fire-preview {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #0a0a0a;
+            border: 1px solid #2a2a2a;
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            text-align: center;
+            gap: 6px;
+        }
+
+        .fire-preview-label {
+            font-size: 11px;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+        }
+
+        .fire-preview-value {
+            font-size: 32px;
+            font-weight: 900;
+            color: #bef202;
+            letter-spacing: -1px;
+        }
+
+        .fire-preview-sub {
+            font-size: 12px;
+            color: #444;
+        }
+
+        /* ── FIRE NOT REACHED — SWIPE CARDS ── */
+        .fire-not-reached-header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .fire-not-reached-header h3 {
+            color: #ff5f5f;
+            font-size: 22px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .fire-not-reached-header p {
+            color: #888;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        .swipe-hint {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: #bef202;
+            font-size: 13px;
+            font-weight: 600;
+            margin: 18px 0 24px;
+            letter-spacing: 0.5px;
+            animation: blink 2s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.45; }
+        }
+
+        .swipe-arrow { font-size: 16px; }
+
+        /* Scroll carousel */
+        .suggestions-carousel {
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            display: flex;
+            gap: 14px;
+            padding-bottom: 4px;
+            scrollbar-width: none;
+        }
+
+        .suggestions-carousel::-webkit-scrollbar { display: none; }
+
+        .suggestion-card {
+            flex: 0 0 82%;
+            scroll-snap-align: start;
+            background: #141414;
+            border: 1px solid #2a2a2a;
+            border-radius: 20px;
+            padding: 28px 24px;
+            transition: border-color 0.3s;
+        }
+
+        .suggestion-card:hover { border-color: #bef202; }
+
+        .suggestion-card .s-number {
+            font-size: 11px;
+            color: #444;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .suggestion-card .s-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #888;
+            margin-bottom: 18px;
+            line-height: 1.5;
+        }
+
+        .suggestion-card .s-value {
+            font-size: 36px;
+            font-weight: 900;
+            color: #bef202;
+            letter-spacing: -1px;
+            line-height: 1;
+        }
+
+        .suggestion-card .s-sub {
+            font-size: 13px;
+            color: #444;
+            margin-top: 12px;
+            line-height: 1.65;
+        }
+
+        /* Carousel dots */
+        .carousel-dots {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 18px;
+        }
+
+        .carousel-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: #2a2a2a;
+            transition: background 0.25s, width 0.25s;
+        }
+
+        .carousel-dot.active {
+            background: #bef202;
+            width: 20px;
+            border-radius: 3px;
+        }
+
+        /* ── MISC ── */
+        .hidden { display: none; }
+
+        small { color: #555; font-size: 12px; }
+
+        .info-icon {
+            display: inline-block;
+            width: 18px; height: 18px;
+            background: #1a1a1a;
+            color: #bef202;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 18px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: help;
+            margin-left: 6px;
+            position: relative;
+            border: 1px solid #2a2a2a;
+        }
+
+        .info-icon:hover .tooltip,
+        .info-icon:active .tooltip { display: block; }
+
+        .tooltip {
+            display: none;
+            position: absolute;
+            bottom: 26px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a1a1a;
+            color: #ffffff;
+            padding: 12px 14px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 400;
+            z-index: 1000;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+            width: max-content;
+            max-width: 240px;
+            white-space: normal;
+            border: 1px solid #2a2a2a;
+        }
+
+        .tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%; left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: #1a1a1a;
+        }
+
+        .calc-btn {
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(135deg, #bef202 0%, #a0d000 100%);
+            color: #000000;
+            border: none;
+            border-radius: 16px;
+            font-size: 17px;
+            font-weight: 800;
+            cursor: pointer;
+            margin-top: 18px;
+            box-shadow: 0 8px 28px rgba(190, 242, 2, 0.28);
+            transition: all 0.25s;
+            letter-spacing: 0.3px;
+        }
+
+        .calc-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 36px rgba(190, 242, 2, 0.38);
+        }
+
+        .calc-btn:active { transform: translateY(0); }
+
+        /* ── LOADER ── */
+        #loader {
+            display: none;
+            text-align: center;
+            padding: 48px 0;
+            margin: 24px 0;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 52px; height: 52px;
+            border: 4px solid #1a1a1a;
+            border-top: 4px solid #bef202;
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+        }
+
+        #loaderText {
+            margin-top: 20px;
+            font-size: 15px;
+            color: #bef202;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        @keyframes spin {
+            0%   { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* ── INFLATION TOGGLE ── */
+        .inflation-toggle {
+            display: none;
+            margin: 28px 0;
+        }
+
+        .inflation-toggle label {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 18px 20px;
+            background: #0f0f0f;
+            border-radius: 14px;
+            border: 1px solid #1a1a1a;
+            transition: border-color 0.2s;
+        }
+
+        .inflation-toggle label:hover { border-color: #2a2a2a; }
+
+        .inflation-toggle input[type="checkbox"] {
+            margin-right: 12px;
+            width: 20px; height: 20px;
+            cursor: pointer;
+            accent-color: #bef202;
+        }
+
+        .inflation-label-text { font-weight: 600; color: #ffffff; }
+
+        /* ── FIRE INFO BOX ── */
+        .fire-info-box {
+            border: 1px solid #1a1a1a;
+            border-left: 3px solid #bef202;
+            padding: 22px;
+            border-radius: 14px;
+            margin-bottom: 28px;
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            background: #0a0a0a;
+        }
+
+        .fire-info-box .emoji { font-size: 28px; flex-shrink: 0; }
+        .fire-info-box strong { color: #bef202; font-size: 15px; font-weight: 700; letter-spacing: 0.5px; }
+        .fire-info-box p { margin: 8px 0 0; font-size: 13px; color: #909090; line-height: 1.7; }
+
+        /* ── MOBILE ── */
+        @media (max-width: 600px) {
+            .container { padding: 32px 20px; }
+            h1 { font-size: 26px; margin-bottom: 32px; }
+            .result-box { padding: 36px 22px; }
+            .result-box .amount { font-size: 40px; }
+            .income-grid { gap: 10px; }
+            .income-card { padding: 18px 14px; }
+            .income-card .card-value { font-size: 18px; }
+            .chart-container { height: 320px; padding: 18px 12px 14px; }
+            .fire-inputs { padding: 24px 18px; }
+            .fire-year { font-size: 44px; }
+            .suggestion-card { flex: 0 0 92%; }
+            .suggestion-card .s-value { font-size: 28px; }
+            .sip-modal-box { padding: 24px 16px; margin: 12px; border-radius: 20px; }
+        }
+
+        /* ── SIP MODAL ── */
+        .sip-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            backdrop-filter: blur(4px);
+        }
+
+        .sip-modal-overlay.open { display: flex; }
+
+        .sip-modal-box {
+            background: #0a0a0a;
+            border: 1px solid #1e1e1e;
+            border-radius: 24px;
+            padding: 32px;
+            width: 100%;
+            max-width: 580px;
+            max-height: 88vh;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            animation: fadeSlideUp 0.3s ease both;
+        }
+
+        .sip-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .sip-modal-header h2 {
+            font-size: 20px;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -0.4px;
+        }
+
+        .sip-modal-close {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            color: #888;
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .sip-modal-close:hover { background: #222; color: #fff; }
+
+        .sip-modal-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .sip-cal-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #888;
+            cursor: pointer;
+        }
+
+        .sip-cal-toggle input { width:16px; height:16px; accent-color:#bef202; cursor:pointer; }
+
+        .sip-save-btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #bef202, #a0d000);
+            color: #000;
+            border: none;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .sip-save-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(190,242,2,0.3); }
+
+        .sip-table-wrap {
+            overflow-y: auto;
+            border-radius: 14px;
+            border: 1px solid #1a1a1a;
+            flex: 1;
+        }
+
+        .sip-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .sip-table thead th {
+            background: #111;
+            color: #666;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 14px 16px;
+            text-align: left;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+
+        .sip-table tbody tr { border-top: 1px solid #141414; }
+        .sip-table tbody tr:hover { background: #0f0f0f; }
+
+        .sip-table td {
+            padding: 12px 16px;
+            color: #ccc;
+            vertical-align: middle;
+        }
+
+        .sip-table td.year-col { color: #555; font-size: 13px; font-weight: 600; }
+        .sip-table td.current-year { color: #bef202; font-weight: 700; }
+
+        .sip-cell-input {
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            width: 100%;
+            padding: 4px 0;
+            outline: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+
+        .sip-cell-input:focus { border-bottom-color: #bef202; }
+
+        .sip-edited-badge {
+            display: inline-block;
+            font-size: 10px;
+            color: #bef202;
+            background: rgba(190,242,2,0.1);
+            border-radius: 4px;
+            padding: 1px 5px;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+
+        .sip-reset-btn {
+            font-size: 11px;
+            color: #555;
+            background: none;
+            border: none;
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 0;
+        }
+
+        .sip-reset-btn:hover { color: #bef202; }
+
+        /* ── SIP CELL EDIT POPUP ── */
+        .sip-edit-popup-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.75);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(6px);
+        }
+
+        .sip-edit-popup-overlay.open { display: flex; }
+
+        .sip-edit-popup {
+            background: #0d0d0d;
+            border: 1px solid #2a2a2a;
+            border-radius: 24px;
+            padding: 32px 28px;
+            width: 90%;
+            max-width: 360px;
+            animation: fadeSlideUp 0.25s ease both;
+        }
+
+        .sip-edit-popup h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .sip-edit-popup .pop-year {
+            font-size: 12px;
+            color: #555;
+            margin-bottom: 24px;
+        }
+
+        .sip-edit-popup .pop-input {
+            width: 100%;
+            padding: 18px 20px;
+            background: #0f0f0f;
+            border: 2px solid #2a2a2a;
+            border-radius: 14px;
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            outline: none;
+            transition: border-color 0.2s;
+            margin-bottom: 10px;
+        }
+
+        .sip-edit-popup .pop-input:focus { border-color: #bef202; }
+
+        .sip-edit-popup .pop-preview {
+            font-size: 28px;
+            font-weight: 900;
+            color: #bef202;
+            letter-spacing: -1px;
+            min-height: 36px;
+            margin-bottom: 6px;
+        }
+
+        .sip-edit-popup .pop-yearly {
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 28px;
+        }
+
+        .sip-edit-popup-btns {
+            display: flex;
+            gap: 10px;
+        }
+
+        .pop-cancel {
+            flex: 1;
+            padding: 14px;
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 12px;
+            color: #888;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .pop-cancel:hover { color: #fff; }
+
+        .pop-confirm {
+            flex: 1;
+            padding: 14px;
+            background: linear-gradient(135deg, #bef202, #a0d000);
+            border: none;
+            border-radius: 12px;
+            color: #000;
+            font-size: 14px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .pop-confirm:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(190,242,2,0.3); }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📊 Portfolio Tracker</h1>
+
+    <div class="input-group">
+        <label>Initial Investment (PKR)
+            <span class="info-icon">i<span class="tooltip">One-time lump sum amount you're investing today</span></span>
+        </label>
+        <!-- FIX 2: placeholder 100,000 | FIX 3: inputmode="numeric" for numeric keyboard -->
+        <input type="text" id="initialInvestment" placeholder="100,000"
+               inputmode="numeric" oninput="formatNumberInput(this)">
+    </div>
+
+    <div class="input-group">
+        <label>Monthly SIP (PKR) — Optional
+            <span class="info-icon">i<span class="tooltip">Systematic Investment Plan – fixed monthly contribution</span></span>
+        </label>
+        <input type="text" id="sip" placeholder="5,000"
+               inputmode="numeric" oninput="formatNumberInput(this)">
+    </div>
+
+    <div class="input-group">
+        <label>Expected Annual Return (%)
+            <span class="info-icon">i<span class="tooltip">Average yearly return rate you expect from your investments</span></span>
+        </label>
+        <input type="number" id="returnRate" placeholder="12" step="0.1" inputmode="decimal">
+    </div>
+
+    <div class="input-group">
+        <label>Yearly SIP Increase (%) — Optional
+            <span class="info-icon">i<span class="tooltip">How much your monthly SIP grows each year (e.g. 10% mirrors a salary hike)</span></span>
+        </label>
+        <input type="number" id="sipYearlyChange" placeholder="10" step="0.1" inputmode="decimal">
+    </div>
+
+    <div class="input-group">
+        <label>Stop Increasing SIP after (Years) — Optional
+            <span class="info-icon">i<span class="tooltip">After this many years, your SIP stays fixed and stops growing. Useful if you expect your income growth to slow down or responsibilities to increase.</span></span>
+        </label>
+        <input type="number" id="sipStopYear" placeholder="e.g. 10" inputmode="numeric">
+        <small>Leave blank to keep increasing SIP for the full investment period</small>
+    </div>
+
+    <div class="input-group">
+        <label>Investment Period (Years)
+            <span class="info-icon">i<span class="tooltip">Total number of years you plan to invest</span></span>
+        </label>
+        <input type="number" id="years" placeholder="20" inputmode="numeric">
+    </div>
+
+    <button class="calc-btn" onclick="calculateWealth()">📊 Calculate my Expected Wealth</button>
+    <button class="calc-btn" onclick="clearAll()" style="margin-top:10px;background:#1a1a1a;color:#888;box-shadow:none;border:1px solid #2a2a2a;">🗑 Clear All Values</button>
+
+    <!-- SIP BREAKDOWN BUTTON (shown after calculation) -->
+    <div id="sipBreakdownBtn" style="display:none; margin-top:16px;">
+        <button onclick="openSipModal()"
+            style="width:100%;padding:14px 20px;background:#0f0f0f;color:#bef202;border:1px solid #2a2a2a;border-radius:14px;font-size:15px;font-weight:600;cursor:pointer;transition:all 0.2s;letter-spacing:0.3px;"
+            onmouseover="this.style.borderColor='#bef202'" onmouseout="this.style.borderColor='#2a2a2a'">
+            📋 View SIP Amount Year by Year
+        </button>
+    </div>
+
+    <!-- LOADER -->
+    <div id="loader">
+        <div class="spinner"></div>
+        <p id="loaderText"></p>
+    </div>
+
+    <!-- INFLATION TOGGLE -->
+    <div class="inflation-toggle" id="inflationToggleSection">
+        <label style="display:flex;align-items:center;gap:0;flex-wrap:wrap;">
+            <input type="checkbox" id="inflationAdjusted" style="margin-right:12px;width:20px;height:20px;cursor:pointer;accent-color:#bef202;">
+            <span class="inflation-label-text">Show Inflation-Adjusted Numbers</span>
+            <span class="info-icon" style="margin-left:8px;">i
+                <span class="tooltip">Shows wealth in today's purchasing power. Assumes 10% annual inflation by default — you can change this rate below.</span>
+            </span>
+        </label>
+        <div id="inflationRateRow" style="display:none;align-items:center;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid #222;">
+            <span style="font-size:13px;color:#666;">Inflation rate used:</span>
+            <input type="number" id="customInflationRate" value="10" step="0.1" inputmode="decimal"
+                   style="width:80px;padding:8px 12px;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:8px;color:#bef202;font-size:14px;font-weight:700;"
+                   oninput="onInflationRateChange()">
+            <span style="font-size:13px;color:#666;">% per year</span>
+        </div>
+    </div>
+
+    <!-- RESULT CARD -->
+    <div class="result-box" id="resultsSection" style="display:none;">
+        <h2>Projected Wealth</h2>
+        <div class="amount" id="finalWealth">PKR 0</div>
+        <p class="years-label" id="yearsLabel">after 20 years</p>
+
+        <!-- Contribution / Profit / Total breakdown -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:28px;text-align:left;">
+            <div style="background:rgba(0,0,0,0.3);border-radius:12px;padding:14px 12px;">
+                <div style="font-size:10px;opacity:0.5;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;">Total Invested</div>
+                <div style="font-size:16px;font-weight:800;color:#fff;" id="totalContrib">PKR 0</div>
+            </div>
+            <div style="background:rgba(0,0,0,0.3);border-radius:12px;padding:14px 12px;">
+                <div style="font-size:10px;opacity:0.5;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;">Total Profit</div>
+                <div style="font-size:16px;font-weight:800;color:#bef202;" id="totalProfit">PKR 0</div>
+            </div>
+            <div style="background:rgba(0,0,0,0.3);border-radius:12px;padding:14px 12px;">
+                <div style="font-size:10px;opacity:0.5;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;">Total Wealth</div>
+                <div style="font-size:16px;font-weight:800;color:#fff;" id="totalWealthBreakdown">PKR 0</div>
+            </div>
+        </div>
+
+        <div class="income-header">
+            <span class="income-title" id="incomeFrequencyLabel">Monthly Passive Income</span>
+            <div class="toggle-buttons">
+                <button class="toggle-btn active" id="monthlyBtn" onclick="setIncomeFrequency('monthly')">Monthly</button>
+                <button class="toggle-btn"         id="yearlyBtn"  onclick="setIncomeFrequency('yearly')">Yearly</button>
+            </div>
+        </div>
+
+        <div class="income-grid">
+            <div class="income-card">
+                <div class="card-label">Fixed Deposit (7%)</div>
+                <div class="card-value" id="fdIncome">PKR 0</div>
+            </div>
+            <div class="income-card">
+                <div class="card-label">Dividend Yield (10%)</div>
+                <div class="card-value" id="dividendIncome">PKR 0</div>
+            </div>
+            <div class="income-card">
+                <div class="card-label">Rental Yield (6%)</div>
+                <div class="card-value" id="rentalIncome">PKR 0</div>
+            </div>
+            <div class="income-card">
+                <div class="card-label">Gold (9%)</div>
+                <div class="card-value" id="goldIncome">PKR 0</div>
+            </div>
+        </div>
+
+        <div class="custom-roi-row">
+            <label class="custom-roi-label">
+                <input type="checkbox" id="enableCustomRoi" onchange="toggleCustomRoi()">
+                Custom ROI
+            </label>
+            <div id="customRoiInput" class="hidden custom-roi-input-row">
+                <input type="number" id="customRoi" value="8" step="0.1"
+                       inputmode="decimal" oninput="updateCustomIncome()">
+                <span class="custom-roi-pct">%</span>
+                <span class="custom-roi-value" id="customIncome">PKR 0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- CALENDAR YEAR TOGGLE (shown after calculation, below wealth card) -->
+    <div id="calendarToggleSection" style="display:none;margin-top:8px;margin-bottom:28px;">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:14px 18px;background:#0f0f0f;border-radius:12px;border:1px solid #1a1a1a;">
+            <input type="checkbox" id="useCalendarYears" style="width:18px;height:18px;accent-color:#bef202;cursor:pointer;" onchange="onCalendarToggle()">
+            <span style="font-size:14px;font-weight:600;color:#ffffff;">Show Calendar Years</span>
+            <span style="font-size:12px;color:#555;margin-left:2px;">(e.g. 2025, 2026…)</span>
+        </label>
+    </div>
+
+    <!-- CHART -->
+    <div class="chart-container" id="chartSection" style="display:none;">
+        <canvas id="wealthChart"></canvas>
+    </div>
+
+    <!-- FIRE SECTION -->
+    <div class="fire-section">
+        <div class="checkbox-container">
+            <input type="checkbox" id="enableFire" onchange="toggleFireSection()">
+            <label for="enableFire">Calculate my FIRE Numbers</label>
+        </div>
+
+        <div id="fireInputs" class="fire-inputs hidden">
+            <div class="fire-info-box">
+                <span class="emoji">💡</span>
+                <div>
+                    <strong>What is FIRE?</strong>
+                    <p>FIRE (Financial Independence, Retire Early) is achieved when your invested wealth equals <strong style="color:#bef202">25× your annual expenses</strong>. This is the globally accepted standard — it means your portfolio can sustain your lifestyle indefinitely through investment returns alone.</p>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>Current Monthly Expenses (PKR)
+                    <span class="info-icon">i<span class="tooltip">Your current monthly living expenses, used to calculate your FIRE number</span></span>
+                </label>
+                <input type="text" id="monthlyExpenses" placeholder="30,000"
+                       inputmode="numeric" oninput="formatNumberInput(this); updateFirePreview();">
+            </div>
+
+            <div class="input-group">
+                <label>Yearly Expense Increase due to Inflation (%)
+                    <span class="info-icon">i<span class="tooltip">Inflation erodes purchasing power every year — meaning your expenses will cost more in the future. Your FIRE target rises with it, so the bar keeps moving up.</span></span>
+                </label>
+                <input type="number" id="expenseIncrease" value="10" step="0.1" inputmode="decimal">
+                <small>💡 Defaulting to <strong style="color:#bef202">10%</strong> — the average annual inflation rate in Pakistan. Enter 0 if you want to ignore inflation.</small>
+            </div>
+
+            <div class="input-group">
+                <label>
+                    FIRE Multiplier (× annual expenses)
+                    <span class="info-icon">i<span class="tooltip">How many years of annual expenses should your wealth cover? 25× is the globally accepted standard (the "4% rule"). A higher number like 30× means a more conservative, secure retirement.</span></span>
+                </label>
+                <input type="number" id="fireMultiplier" placeholder="25" value="25" min="1" step="1" inputmode="numeric" oninput="updateFirePreview()">
+                <small>💡 <strong style="color:#bef202">25× is the global FIRE standard.</strong> Choose 30× for extra security, or 20× for lean FIRE.</small>
+            </div>
+
+            <!-- FIRE number preview -->
+            <div id="firePreview" class="fire-preview hidden">
+                <span class="fire-preview-label">Your FIRE Number (Today)</span>
+                <span class="fire-preview-value" id="firePreviewValue">PKR 0</span>
+                <span class="fire-preview-sub" id="firePreviewSub">= Monthly Expenses × 12 × 25</span>
+            </div>
+
+            <button class="calc-btn" onclick="calculateFire()">🔥 Calculate my FIRE</button>
+
+            <div id="fireResult" class="fire-result hidden"></div>
+        </div>
+    </div>
+</div>
+
+<!-- SIP CELL EDIT POPUP -->
+<div class="sip-edit-popup-overlay" id="sipEditPopup" onclick="closeSipEditPopupOutside(event)">
+    <div class="sip-edit-popup">
+        <h3>Edit SIP Amount</h3>
+        <div class="pop-year" id="popYearLabel">Year 1</div>
+
+        <label style="font-size:12px;color:#555;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;display:block;margin-bottom:8px;">Monthly SIP</label>
+        <input class="pop-input" type="text" inputmode="numeric" id="popMonthlyInput"
+               placeholder="50,000" oninput="onPopMonthlyInput(this)">
+        <div class="pop-preview" id="popMonthlyPreview">—</div>
+
+        <div style="display:flex;align-items:center;gap:10px;margin:16px 0 8px;">
+            <div style="flex:1;height:1px;background:#1e1e1e;"></div>
+            <span style="font-size:11px;color:#444;font-weight:600;">or enter yearly</span>
+            <div style="flex:1;height:1px;background:#1e1e1e;"></div>
+        </div>
+
+        <label style="font-size:12px;color:#555;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;display:block;margin-bottom:8px;">Yearly Amount</label>
+        <input class="pop-input" type="text" inputmode="numeric" id="popYearlyInput"
+               placeholder="600,000" oninput="onPopYearlyInput(this)">
+        <div class="pop-preview" id="popYearlyPreview" style="font-size:18px;margin-bottom:20px;">—</div>
+
+        <div class="sip-edit-popup-btns">
+            <button class="pop-cancel" onclick="closeSipEditPopup()">Cancel</button>
+            <button class="pop-confirm" onclick="confirmSipEdit()">Update</button>
+        </div>
+    </div>
+</div>
+<div class="sip-modal-overlay" id="sipModal" onclick="closeSipModalOutside(event)">
+    <div class="sip-modal-box">
+        <div class="sip-modal-header">
+            <h2>📋 SIP Year by Year</h2>
+            <button class="sip-modal-close" onclick="closeSipModal()">✕</button>
+        </div>
+
+        <div class="sip-modal-controls">
+            <label class="sip-cal-toggle">
+                <input type="checkbox" id="modalCalYears" onchange="renderSipTable()">
+                Show calendar years
+            </label>
+            <div style="display:flex;gap:10px;align-items:center;">
+                <button class="sip-reset-btn" onclick="resetSipTable()">Reset to auto</button>
+                <button class="sip-save-btn" onclick="saveSipEdits()">💾 Save changes</button>
+            </div>
+        </div>
+
+        <div class="sip-table-wrap">
+            <table class="sip-table" id="sipTable">
+                <thead>
+                    <tr>
+                        <th style="width:30%">Year</th>
+                        <th style="width:35%">Monthly SIP</th>
+                        <th style="width:35%">Yearly Amount</th>
+                    </tr>
+                </thead>
+                <tbody id="sipTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    /* ─── STATE ─── */
+    let chart           = null;
+    let lastWealth      = 0;
+    let lastTotalContrib= 0;
+    let lastYears       = 0;
+    let lastLabels      = [];
+    let lastWealthData  = [];
+    let lastContribData = [];
+    let lastFireLine    = null;
+    let incomeFrequency = 'monthly';
+    const inflationRate = 0.10;
+
+    // SIP schedule: array of {year, monthly, yearly, edited}
+    let sipSchedule     = [];
+    let sipCustom       = [];
+    let calendarStart   = new Date().getFullYear();
+
+    /* ─── HELPERS ─── */
+    function parseFormattedNumber(str) {
+        return parseFloat((str || '').replace(/,/g, '')) || 0;
+    }
+
+    function formatNumberInput(input) {
+        const cursorPos = input.selectionStart;
+        const oldLen    = input.value.length;
+        const digits    = input.value.replace(/\D/g, '');
+        if (!digits) { input.value = ''; return; }
+        const formatted = parseInt(digits).toLocaleString('en-US');
+        input.value = formatted;
+        const diff = formatted.length - oldLen;
+        try { input.setSelectionRange(cursorPos + diff, cursorPos + diff); } catch(e){}
+    }
+
+    function formatCurrency(value) {
+        const v = Math.round(value);
+        if (v >= 10_000_000) return `PKR ${(v / 10_000_000).toFixed(2)} Cr`;
+        if (v >= 100_000)    return `PKR ${(v / 100_000).toFixed(2)} L`;
+        return `PKR ${v.toLocaleString('en-US')}`;
+    }
+
+    function compactValue(v) {
+        if (v >= 10_000_000) return `${(v / 10_000_000).toFixed(0)} Cr`;
+        if (v >= 100_000)    return `${(v / 100_000).toFixed(0)} L`;
+        if (v >= 1_000)      return `${(v / 1_000).toFixed(0)}K`;
+        return `${v}`;
+    }
+
+    /* ─── INCOME DISPLAY ─── */
+    function setIncomeFrequency(freq) {
+        incomeFrequency = freq;
+        document.getElementById('monthlyBtn').classList.toggle('active', freq === 'monthly');
+        document.getElementById('yearlyBtn').classList.toggle('active',  freq === 'yearly');
+        document.getElementById('incomeFrequencyLabel').textContent =
+            (freq === 'monthly' ? 'Monthly' : 'Yearly') + ' Passive Income';
+        updateIncomeDisplay(lastWealth);
+    }
+
+    function updateIncomeDisplay(wealth) {
+        const mul     = incomeFrequency === 'monthly' ? 1/12 : 1;
+        const infl    = document.getElementById('inflationAdjusted').checked;
+        const deflate = infl ? Math.pow(1 + getInflationRate(), -lastYears) : 1;
+
+        document.getElementById('fdIncome').textContent       = formatCurrency(wealth * 0.07 * mul * deflate);
+        document.getElementById('dividendIncome').textContent = formatCurrency(wealth * 0.10 * mul * deflate);
+        document.getElementById('rentalIncome').textContent   = formatCurrency(wealth * 0.06 * mul * deflate);
+        document.getElementById('goldIncome').textContent     = formatCurrency(wealth * 0.09 * mul * deflate);
+        updateCustomIncome();
+    }
+
+    function toggleCustomRoi() {
+        const show = document.getElementById('enableCustomRoi').checked;
+        document.getElementById('customRoiInput').classList.toggle('hidden', !show);
+        if (show) updateCustomIncome();
+    }
+
+    function updateCustomIncome() {
+        if (!document.getElementById('enableCustomRoi').checked) return;
+        const roi     = parseFloat(document.getElementById('customRoi').value) / 100 || 0;
+        const mul     = incomeFrequency === 'monthly' ? 1/12 : 1;
+        const infl    = document.getElementById('inflationAdjusted').checked;
+        const deflate = infl ? Math.pow(1 + getInflationRate(), -lastYears) : 1;
+        document.getElementById('customIncome').textContent = formatCurrency(lastWealth * roi * mul * deflate);
+    }
+
+    /* ─── INFLATION TOGGLE ─── */
+    document.getElementById('inflationAdjusted').addEventListener('change', function() {
+        if (!lastWealth) return;
+        const on = this.checked;
+        // Show/hide custom inflation rate row
+        const row = document.getElementById('inflationRateRow');
+        row.style.display = on ? 'flex' : 'none';
+        refreshDisplayedWealth();
+    });
+
+    function getInflationRate() {
+        const v = parseFloat(document.getElementById('customInflationRate').value);
+        return isNaN(v) ? 0.10 : v / 100;
+    }
+
+    function onInflationRateChange() {
+        if (!lastWealth) return;
+        refreshDisplayedWealth();
+    }
+
+    function refreshDisplayedWealth() {
+        const infl    = document.getElementById('inflationAdjusted').checked;
+        const rate    = getInflationRate();
+        const deflate = infl ? Math.pow(1 + rate, -lastYears) : 1;
+        const w       = lastWealth * deflate;
+        const tc      = lastTotalContrib * deflate;
+
+        document.getElementById('finalWealth').textContent          = formatCurrency(w);
+        document.getElementById('totalContrib').textContent         = formatCurrency(tc);
+        document.getElementById('totalProfit').textContent          = formatCurrency(w - tc);
+        document.getElementById('totalWealthBreakdown').textContent = formatCurrency(w);
+        updateIncomeDisplay(lastWealth);
+        updateYearsLabel();
+    }
+
+    function getCalendarYear(y) { return calendarStart + y - 1; }
+
+    function updateYearsLabel() {
+        const cal = document.getElementById('useCalendarYears').checked;
+        const endYear = cal ? getCalendarYear(lastYears) : null;
+        const base = `after ${lastYears} year${lastYears !== 1 ? 's' : ''}`;
+        document.getElementById('yearsLabel').textContent = endYear ? `${base} (by ${endYear})` : base;
+    }
+
+    function onCalendarToggle() {
+        updateYearsLabel();
+        // Rebuild chart with calendar labels
+        const cal    = document.getElementById('useCalendarYears').checked;
+        const labels = cal
+            ? lastLabels.map(y => `'${String(getCalendarYear(y)).slice(-2)}`)
+            : lastLabels;
+        buildChart(labels, lastWealthData, lastContribData, lastFireLine);
+        // Also sync modal toggle
+        const mCalCheck = document.getElementById('modalCalYears');
+        if (mCalCheck) mCalCheck.checked = cal;
+    }
+
+    /* ─── CLEAR ALL ─── */
+    function clearAll() {
+        const ids = ['initialInvestment','sip','returnRate','sipYearlyChange','sipStopYear','years',
+                     'monthlyExpenses','expenseIncrease','fireMultiplier'];
+        ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+        // Reset fireMultiplier default
+        document.getElementById('fireMultiplier').value = '25';
+        document.getElementById('expenseIncrease').value = '10';
+        document.getElementById('resultsSection').style.display      = 'none';
+        document.getElementById('chartSection').style.display        = 'none';
+        document.getElementById('inflationToggleSection').style.display = 'none';
+        document.getElementById('sipBreakdownBtn').style.display     = 'none';
+        document.getElementById('calendarToggleSection').style.display = 'none';
+        document.getElementById('fireResult').classList.add('hidden');
+        document.getElementById('inflationAdjusted').checked = false;
+        document.getElementById('inflationRateRow').style.display = 'none';
+        document.getElementById('useCalendarYears').checked = false;
+        lastWealth = 0; lastYears = 0; lastTotalContrib = 0;
+        lastLabels = []; lastWealthData = []; lastContribData = []; lastFireLine = null;
+        if (chart) { chart.destroy(); chart = null; }
+    }
+
+    /* ─── MAIN CALCULATION ─── */
+    function calculateWealth() {
+        const initial      = parseFormattedNumber(document.getElementById('initialInvestment').value);
+        const sip          = parseFormattedNumber(document.getElementById('sip').value);
+        const rate         = parseFloat(document.getElementById('returnRate').value) / 100;
+        const scRaw        = document.getElementById('sipYearlyChange').value;
+        const sipChange    = scRaw === '' ? 0 : parseFloat(scRaw) / 100;
+        const stopYrRaw    = document.getElementById('sipStopYear').value;
+        const sipStopYear  = stopYrRaw !== '' ? parseInt(stopYrRaw) : Infinity;
+        const years        = parseInt(document.getElementById('years').value);
+
+        if (!rate || !years) {
+            alert('Please enter at least an Annual Return % and Investment Period.');
+            return;
+        }
+
+        document.getElementById('loader').style.display              = 'block';
+        document.getElementById('resultsSection').style.display      = 'none';
+        document.getElementById('chartSection').style.display        = 'none';
+        document.getElementById('inflationToggleSection').style.display = 'none';
+        document.getElementById('sipBreakdownBtn').style.display     = 'none';
+        document.getElementById('calendarToggleSection').style.display = 'none';
+
+        const msgs = ['🔄 Compounding your returns…','📈 Projecting your growth…','💹 Calculating passive income…','✅ Almost there…'];
+        let idx = 0;
+        document.getElementById('loaderText').textContent = msgs[0];
+        const iv = setInterval(() => {
+            idx = (idx + 1) % msgs.length;
+            document.getElementById('loaderText').textContent = msgs[idx];
+        }, 600);
+
+        setTimeout(() => {
+            clearInterval(iv);
+            document.getElementById('loader').style.display = 'none';
+
+            const mRate = rate / 12;
+            const rawLabels = [], wData = [], cData = [];
+            let w = initial, curSip = sip, totalC = initial;
+
+            sipSchedule = [];
+            sipCustom   = [];
+
+            for (let y = 1; y <= years; y++) {
+                const monthlySip = Math.round(curSip);
+                sipSchedule.push({ year: y, monthly: monthlySip, yearly: monthlySip * 12 });
+                sipCustom.push(null);
+
+                for (let m = 0; m < 12; m++) {
+                    w = w * (1 + mRate) + curSip;
+                    totalC += curSip;
+                }
+                if (y < sipStopYear) curSip *= (1 + sipChange);
+                rawLabels.push(y);
+                wData.push(Math.round(w));
+                cData.push(Math.round(totalC));
+            }
+
+            lastWealth       = w;
+            lastTotalContrib = totalC;
+            lastYears        = years;
+            lastLabels       = rawLabels;
+            lastWealthData   = wData;
+            lastContribData  = cData;
+            lastFireLine     = null;
+
+            // Apply inflation if toggled
+            const infl    = document.getElementById('inflationAdjusted').checked;
+            const iRate   = getInflationRate();
+            const deflate = infl ? Math.pow(1 + iRate, -years) : 1;
+            const dw = w * deflate, dtc = totalC * deflate;
+
+            document.getElementById('finalWealth').textContent          = formatCurrency(dw);
+            document.getElementById('totalContrib').textContent         = formatCurrency(dtc);
+            document.getElementById('totalProfit').textContent          = formatCurrency(dw - dtc);
+            document.getElementById('totalWealthBreakdown').textContent = formatCurrency(dw);
+
+            updateYearsLabel();
+            updateIncomeDisplay(w);
+
+            document.getElementById('resultsSection').style.display        = 'block';
+            document.getElementById('chartSection').style.display          = 'block';
+            document.getElementById('inflationToggleSection').style.display = 'block';
+            document.getElementById('sipBreakdownBtn').style.display       = 'block';
+            document.getElementById('calendarToggleSection').style.display = 'block';
+
+            // Use calendar labels if toggle is on
+            const cal    = document.getElementById('useCalendarYears').checked;
+            const labels = cal ? rawLabels.map(y => `'${String(getCalendarYear(y)).slice(-2)}`) : rawLabels;
+            buildChart(labels, wData, cData, null);
+        }, 2000);
+    }
+
+    /* ─── CHART ─── */
+    function buildChart(labels, wealthData, contribData, fireLineData) {
+        lastFireLine = fireLineData;
+        const ctx = document.getElementById('wealthChart').getContext('2d');
+        if (chart) chart.destroy();
+
+        const gW = ctx.createLinearGradient(0, 0, 0, 420);
+        gW.addColorStop(0, 'rgba(190,242,2,0.28)');
+        gW.addColorStop(1, 'rgba(190,242,2,0.0)');
+
+        const gC = ctx.createLinearGradient(0, 0, 0, 420);
+        gC.addColorStop(0, 'rgba(80,200,120,0.18)');
+        gC.addColorStop(1, 'rgba(80,200,120,0.0)');
+
+        const datasets = [
+            {
+                label: 'Your Wealth',
+                data: wealthData,
+                borderColor: '#bef202',
+                borderWidth: 3,
+                backgroundColor: gW,
+                fill: true,
+                tension: 0.42,
+                pointRadius: 0,
+                pointHoverRadius: 7,
+                pointHoverBackgroundColor: '#bef202',
+                pointHoverBorderColor: '#000',
+                pointHoverBorderWidth: 2,
+            },
+            {
+                label: 'Total Contributions',
+                data: contribData,
+                borderColor: '#50c878',
+                borderWidth: 2,
+                backgroundColor: gC,
+                fill: true,
+                tension: 0.42,
+                pointRadius: 0,
+                pointHoverRadius: 5,
+                pointHoverBackgroundColor: '#50c878',
+                pointHoverBorderColor: '#000',
+                pointHoverBorderWidth: 2,
+            }
+        ];
+
+        if (fireLineData && fireLineData.length) {
+            datasets.push({
+                label: 'FIRE Target',
+                data: fireLineData,
+                borderColor: '#ff6b6b',
+                borderWidth: 2,
+                borderDash: [7, 4],
+                backgroundColor: 'transparent',
+                fill: false,
+                tension: 0.3,
+                pointRadius: 0,
+                pointHoverRadius: 5,
+                pointHoverBackgroundColor: '#ff6b6b',
+                pointHoverBorderColor: '#000',
+                pointHoverBorderWidth: 2,
+            });
+        }
+
+        const cal = document.getElementById('useCalendarYears').checked;
+
+        chart = new Chart(ctx, {
+            type: 'line',
+            data: { labels, datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 1100, easing: 'easeInOutQuart' },
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: {
+                        position: 'top', align: 'end',
+                        labels: { color: '#666', font: { size: 12, weight: '600' }, boxWidth: 28, boxHeight: 3, padding: 20 }
+                    },
+                    tooltip: {
+                        backgroundColor: '#111', titleColor: '#fff', bodyColor: '#999',
+                        borderColor: '#252525', borderWidth: 1, padding: 16, cornerRadius: 12,
+                        callbacks: {
+                            title: c => cal ? `${c[0].label}` : `Year ${c[0].label}`,
+                            label: c => ` ${c.dataset.label}: ${formatCurrency(c.raw)}`
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: { display: true, text: cal ? 'Year' : 'Years', color: '#555', font: { size: 12, weight: '600' }, padding: { top: 10 } },
+                        grid:  { color: 'rgba(255,255,255,0.04)' },
+                        ticks: { color: '#555', font: { size: 11 }, maxTicksLimit: 10 }
+                    },
+                    y: {
+                        title: { display: true, text: 'PKR', color: '#555', font: { size: 12, weight: '700' }, padding: { bottom: 8 } },
+                        grid:  { color: 'rgba(255,255,255,0.05)' },
+                        ticks: { color: '#555', font: { size: 11 }, maxTicksLimit: 7, callback: v => compactValue(v) }
+                    }
+                }
+            }
+        });
+    }
+
+    /* ─── FIRE TOGGLE ─── */
+    function toggleFireSection() {
+        document.getElementById('fireInputs').classList.toggle('hidden', !document.getElementById('enableFire').checked);
+    }
+
+    /* ─── FIRE HELPERS ─── */
+
+    /* Read expense increase: blank → 10%, "0" → 0 */
+    function getExpenseIncrease() {
+        const raw = document.getElementById('expenseIncrease').value;
+        if (raw === '' || raw === null) return 0.10;
+        return parseFloat(raw) / 100;
+    }
+
+    /* Read multiplier: blank or invalid → 25 */
+    function getMultiplier() {
+        const raw = document.getElementById('fireMultiplier').value;
+        const v   = parseInt(raw);
+        return (!raw || isNaN(v) || v < 1) ? 25 : v;
+    }
+
+    /*
+     * FIRE target for a given year:
+     *   = monthlyExpenses × 12 × (1 + expIncrease)^year × multiplier
+     *
+     * Inflation is applied because if expenses grow each year the wealth needed
+     * to cover them (at N× annual expenses) also grows — the target is a rising line.
+     */
+    function fireTarget(monthlyExpenses, expIncrease, multiplier, year) {
+        return monthlyExpenses * 12 * Math.pow(1 + expIncrease, year) * multiplier;
+    }
+
+    /* Live preview — updates whenever expenses or multiplier change */
+    function updateFirePreview() {
+        const expenses   = parseFormattedNumber(document.getElementById('monthlyExpenses').value);
+        const multiplier = getMultiplier();
+        const preview    = document.getElementById('firePreview');
+        if (!expenses) { preview.classList.add('hidden'); return; }
+        // Show today's FIRE number (year 0 — no inflation yet)
+        const fireNum = expenses * 12 * multiplier;
+        document.getElementById('firePreviewValue').textContent = formatCurrency(fireNum);
+        document.getElementById('firePreviewSub').textContent   = `= Monthly Expenses × 12 × ${multiplier}`;
+        preview.classList.remove('hidden');
+    }
+
+    /* ─── FIRE CALCULATION ─── */
+    function calculateFire() {
+        const expenses    = parseFormattedNumber(document.getElementById('monthlyExpenses').value);
+        const expIncrease = getExpenseIncrease();
+        const multiplier  = getMultiplier();
+        const initial     = parseFormattedNumber(document.getElementById('initialInvestment').value);
+        const sip         = parseFormattedNumber(document.getElementById('sip').value);
+        const rate        = parseFloat(document.getElementById('returnRate').value) / 100;
+        const scRaw       = document.getElementById('sipYearlyChange').value;
+        const sipChange   = scRaw === '' ? 0 : parseFloat(scRaw) / 100;
+        const investYears = parseInt(document.getElementById('years').value) || 0;
+
+        if (!expenses || !rate) {
+            alert('Please fill in Monthly Expenses and Annual Return % to calculate FIRE.');
+            return;
+        }
+        if (!investYears) {
+            alert('Please fill in your Investment Period (Years) above to calculate FIRE.');
+            return;
+        }
+
+        const mRate = rate / 12;
+        let w = initial, curSip = sip;
+        let fireYear = null, fireWealth = 0, fireTargetAtYear = 0;
+
+        // Build FIRE target line (rising with inflation) clipped to investYears for chart
+        const fireLineData = [];
+
+        const maxLoop = Math.max(investYears, 100);
+        for (let y = 1; y <= maxLoop; y++) {
+            for (let m = 0; m < 12; m++) {
+                w = w * (1 + mRate) + curSip;
+            }
+            curSip *= (1 + sipChange);
+
+            const target = fireTarget(expenses, expIncrease, multiplier, y);
+
+            if (y <= investYears) {
+                fireLineData.push(Math.round(target));
+            }
+
+            if (!fireYear && w >= target) {
+                fireYear          = y;
+                fireWealth        = w;
+                fireTargetAtYear  = target;
+            }
+        }
+
+        // Rebuild chart with rising FIRE target line (respect calendar toggle)
+        const cal    = document.getElementById('useCalendarYears').checked;
+        const labels = cal ? lastLabels.map(y => `'${String(getCalendarYear(y)).slice(-2)}`) : lastLabels;
+        buildChart(labels, lastWealthData, lastContribData, fireLineData);
+
+        const el = document.getElementById('fireResult');
+        el.classList.remove('hidden');
+
+        const reachedInTime = fireYear !== null && fireYear <= investYears;
+        // Today's FIRE number (for display, before inflation)
+        const todayFireNum = expenses * 12 * multiplier;
+
+        // Wealth at end of investment period (last value from simulation)
+        const projectedWealth   = lastWealthData[investYears - 1] || w;
+        // FIRE target at end of investment period (what the bar will be at year N)
+        const inflatedFireTarget = fireTarget(expenses, expIncrease, multiplier, investYears);
+
+        if (reachedInTime) {
+            el.style.borderColor = '#bef202';
+            el.innerHTML = `
+                <h3>🔥 You can FIRE in</h3>
+                <div class="fire-year">${fireYear} Year${fireYear !== 1 ? 's' : ''}</div>
+                <p>
+                    FIRE multiplier used: <strong style="color:#bef202">${multiplier}×</strong>
+                    <span style="font-size:12px;color:#666;">(${multiplier === 25 ? 'global standard' : 'custom'})</span><br>
+                    Your FIRE Number today: <strong style="color:#bef202">${formatCurrency(todayFireNum)}</strong><br>
+                    FIRE target at Year ${fireYear} (inflation-adjusted): <strong style="color:#bef202">${formatCurrency(fireTargetAtYear)}</strong><br>
+                    Your projected wealth at that point: <strong style="color:#bef202">${formatCurrency(fireWealth)}</strong><br>
+                    Your wealth <strong style="color:#bef202">covers ${multiplier} years of inflation-adjusted annual expenses</strong> — you're financially free.
+                </p>`;
+        } else {
+            el.style.borderColor = '#ff5f5f';
+            const sugg = computeSuggestions(initial, sip, sipChange, rate, expenses, expIncrease, multiplier, investYears);
+            el.innerHTML = buildNotReachedHTML(sugg, fireYear, investYears, todayFireNum, multiplier, projectedWealth, inflatedFireTarget);
+            initCarousel();
+        }
+    }
+
+    /* ─── BINARY SEARCH ─── */
+    function bSearch(lo, hi, iters, test) {
+        for (let i = 0; i < iters; i++) {
+            const mid = (lo + hi) / 2;
+            if (test(mid)) hi = mid; else lo = mid;
+        }
+        return hi;
+    }
+
+    function simFinalWealth(init, sip, sipCh, rate, years) {
+        const mRate = rate / 12;
+        let w = init, cur = sip;
+        for (let y = 0; y < years; y++) {
+            for (let m = 0; m < 12; m++) w = w * (1 + mRate) + cur;
+            cur *= (1 + sipCh);
+        }
+        return w;
+    }
+
+    function computeSuggestions(init, sip, sipCh, rate, monthlyExp, expInc, multiplier, years) {
+        // Goal = FIRE target at the END of the investment period (inflation-adjusted)
+        const goal = fireTarget(monthlyExp, expInc, multiplier, years);
+
+        const minInit = bSearch(init, Math.max(init * 50 + 1, goal * 3), 48,
+            x => simFinalWealth(x, sip, sipCh, rate, years) >= goal);
+
+        const minSip = bSearch(0, Math.max(sip * 100 + 1, goal / 10), 48,
+            x => simFinalWealth(init, x, sipCh, rate, years) >= goal);
+
+        const minSipInc = bSearch(0, 3, 48,
+            x => simFinalWealth(init, sip, x, rate, years) >= goal);
+
+        /*
+         * "Decrease expenses to" — find max monthly expenses (today) such that
+         * the inflation-adjusted FIRE target at end of period ≤ final wealth.
+         *
+         * fireTarget(maxExp, expInc, multiplier, years) = finalWealth
+         * maxExp × 12 × (1+expInc)^years × multiplier = finalWealth
+         * maxExp = finalWealth / (12 × (1+expInc)^years × multiplier)
+         *
+         * This is a direct calculation — no binary search needed.
+         */
+        const finalWealth  = simFinalWealth(init, sip, sipCh, rate, years);
+        const maxMonthlyExp = finalWealth / (12 * Math.pow(1 + expInc, years) * multiplier);
+
+        return { minInit, minSip, minSipInc, maxMonthlyExp };
+    }
+
+    function buildNotReachedHTML(s, fireYear, investYears, todayFireNum, multiplier, projectedWealth, inflatedFireTarget) {
+        const shortfall = inflatedFireTarget - projectedWealth;
+        const gapMsg = fireYear
+            ? `FIRE is reachable in <strong style="color:#ff8c8c">${fireYear} years</strong> — that's <strong style="color:#ff8c8c">${fireYear - investYears} year${fireYear - investYears !== 1 ? 's' : ''} beyond</strong> your ${investYears}-year investment period.`
+            : `FIRE cannot be reached within 100 years with your current strategy.`;
+
+        return `
+        <div class="fire-not-reached-header">
+            <h3>⚠️ FIRE Not Reached in ${investYears} Years</h3>
+
+            <!-- 3-stat row -->
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:18px 0 20px;text-align:left;">
+                <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:14px 12px;">
+                    <div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;">FIRE Number Today</div>
+                    <div style="font-size:15px;font-weight:800;color:#fff;">${formatCurrency(todayFireNum)}</div>
+                    <div style="font-size:10px;color:#444;margin-top:4px;">${multiplier}× annual expenses</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:14px 12px;">
+                    <div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;">FIRE Target in Yr ${investYears}</div>
+                    <div style="font-size:15px;font-weight:800;color:#ff8c8c;">${formatCurrency(inflatedFireTarget)}</div>
+                    <div style="font-size:10px;color:#444;margin-top:4px;">inflation-adjusted</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:14px 12px;">
+                    <div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;">Your Projected Wealth</div>
+                    <div style="font-size:15px;font-weight:800;color:#fff;">${formatCurrency(projectedWealth)}</div>
+                    <div style="font-size:10px;color:#ff6b6b;margin-top:4px;">short by ${formatCurrency(shortfall)}</div>
+                </div>
+            </div>
+
+            <p>
+                ${gapMsg}<br><br>
+                With your current strategy you cannot reach FIRE within your investment period.<br>
+                Swipe to see how you can get there. 👉
+            </p>
+        </div>
+
+        <div class="swipe-hint">
+            <span class="swipe-arrow">←</span>&nbsp;Swipe to see how you can achieve FIRE&nbsp;<span class="swipe-arrow">→</span>
+        </div>
+
+        <div class="suggestions-carousel" id="suggestionsCarousel">
+
+            <div class="suggestion-card">
+                <div class="s-number">Option 01</div>
+                <div class="s-title">Increase Initial Investment to</div>
+                <div class="s-value">${formatCurrency(s.minInit)}</div>
+                <div class="s-sub">Contributing ${formatCurrency(s.minInit)} as your opening lump sum — with your current monthly SIP and return rate unchanged — closes the gap and gets you to FIRE within ${investYears} years.</div>
+            </div>
+
+            <div class="suggestion-card">
+                <div class="s-number">Option 02</div>
+                <div class="s-title">Increase Monthly SIP to</div>
+                <div class="s-value">${formatCurrency(s.minSip)}</div>
+                <div class="s-sub">Contributing ${formatCurrency(s.minSip)} every month — keeping your lump sum and return rate unchanged — is sufficient on its own to reach FIRE within ${investYears} years.</div>
+            </div>
+
+            <div class="suggestion-card">
+                <div class="s-number">Option 03</div>
+                <div class="s-title">Grow SIP Annually by</div>
+                <div class="s-value">${(s.minSipInc * 100).toFixed(1)}% / yr</div>
+                <div class="s-sub">Stepping up your SIP by ${(s.minSipInc * 100).toFixed(1)}% each year — with no other changes to your strategy — compounds into enough wealth to achieve FIRE within ${investYears} years.</div>
+            </div>
+
+            <div class="suggestion-card">
+                <div class="s-number">Option 04</div>
+                <div class="s-title">Reduce Monthly Expenses to</div>
+                <div class="s-value">${formatCurrency(s.maxMonthlyExp)}</div>
+                <div class="s-sub">Spending ${formatCurrency(s.maxMonthlyExp)} per month reduces your FIRE target to a level your projected wealth can reach within ${investYears} years — no change to your investment strategy required.</div>
+            </div>
+
+        </div>
+
+        <div class="carousel-dots" id="carouselDots">
+            <div class="carousel-dot active"></div>
+            <div class="carousel-dot"></div>
+            <div class="carousel-dot"></div>
+            <div class="carousel-dot"></div>
+        </div>`;
+    }
+
+    /* ─── CAROUSEL DOTS ─── */
+    function initCarousel() {
+        setTimeout(() => {
+            const carousel = document.getElementById('suggestionsCarousel');
+            const dots     = document.querySelectorAll('#carouselDots .carousel-dot');
+            if (!carousel || !dots.length) return;
+
+            const cardW = carousel.querySelector('.suggestion-card')?.offsetWidth + 14 || 1;
+
+            carousel.addEventListener('scroll', () => {
+                const idx = Math.min(Math.round(carousel.scrollLeft / cardW), dots.length - 1);
+                dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+            }, { passive: true });
+        }, 120);
+    }
+
+    /* ─── SIP MODAL ─── */
+
+    let popEditIndex = -1;
+
+    function compactSip(v) {
+        if (v >= 10_000_000) return `${(v / 10_000_000).toFixed(2)} Cr`;
+        if (v >= 100_000)    return `${(v / 100_000).toFixed(2)} L`;
+        if (v >= 1_000)      return `${(v / 1_000).toFixed(1)}K`;
+        return `${Math.round(v)}`;
+    }
+
+    function openSipModal() {
+        document.getElementById('modalCalYears').checked =
+            document.getElementById('useCalendarYears').checked;
+        renderSipTable();
+        document.getElementById('sipModal').classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeSipModal() {
+        document.getElementById('sipModal').classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    function closeSipModalOutside(e) {
+        if (e.target === document.getElementById('sipModal')) closeSipModal();
+    }
+
+    function getYearLabel(y) {
+        const useCalendar = document.getElementById('modalCalYears').checked;
+        return useCalendar ? (calendarStart + y - 1).toString() : `Year ${y}`;
+    }
+
+    function renderSipTable() {
+        const tbody = document.getElementById('sipTableBody');
+        tbody.innerHTML = '';
+        const currentYear = new Date().getFullYear();
+
+        sipSchedule.forEach((row, i) => {
+            const data   = sipCustom[i] || row;
+            const edited = sipCustom[i] !== null;
+            const calYr  = calendarStart + row.year - 1;
+            const isNow  = document.getElementById('modalCalYears').checked && calYr === currentYear;
+
+            const tr = document.createElement('tr');
+            tr.style.cursor = 'pointer';
+            tr.onclick = () => openSipEditPopup(i);
+            tr.innerHTML = `
+                <td class="year-col ${isNow ? 'current-year' : ''}">${getYearLabel(row.year)}${isNow ? ' ←' : ''}</td>
+                <td>
+                    <span style="font-size:16px;font-weight:700;color:${edited ? '#bef202' : '#fff'}">
+                        ${compactSip(data.monthly)}
+                    </span>
+                    ${edited ? `<span class="sip-edited-badge">edited</span>` : ''}
+                </td>
+                <td>
+                    <span style="font-size:14px;font-weight:600;color:#888">
+                        ${compactSip(data.yearly)}
+                    </span>
+                </td>`;
+            tbody.appendChild(tr);
+        });
+    }
+
+    /* ─── SIP CELL EDIT POPUP ─── */
+    function openSipEditPopup(index) {
+        popEditIndex = index;
+        const data = sipCustom[index] || sipSchedule[index];
+        document.getElementById('popYearLabel').textContent = getYearLabel(sipSchedule[index].year);
+
+        // Populate both fields
+        const mInput = document.getElementById('popMonthlyInput');
+        const yInput = document.getElementById('popYearlyInput');
+        mInput.value = data.monthly.toLocaleString('en-US');
+        yInput.value = data.yearly.toLocaleString('en-US');
+        document.getElementById('popMonthlyPreview').textContent = compactSip(data.monthly);
+        document.getElementById('popYearlyPreview').textContent  = compactSip(data.yearly);
+
+        document.getElementById('sipEditPopup').classList.add('open');
+    }
+
+    function closeSipEditPopup() {
+        document.getElementById('sipEditPopup').classList.remove('open');
+        popEditIndex = -1;
+    }
+
+    function closeSipEditPopupOutside(e) {
+        if (e.target === document.getElementById('sipEditPopup')) closeSipEditPopup();
+    }
+
+    // User edits Monthly → auto-calculate Yearly
+    function onPopMonthlyInput(input) {
+        const raw = input.value.replace(/\D/g, '');
+        const num = parseInt(raw) || 0;
+        input.value = num ? num.toLocaleString('en-US') : '';
+        document.getElementById('popMonthlyPreview').textContent = num ? compactSip(num) : '—';
+        // Mirror to yearly
+        const yearly = num * 12;
+        const yInput = document.getElementById('popYearlyInput');
+        yInput.value = num ? yearly.toLocaleString('en-US') : '';
+        document.getElementById('popYearlyPreview').textContent = num ? compactSip(yearly) : '—';
+    }
+
+    // User edits Yearly → auto-calculate Monthly
+    function onPopYearlyInput(input) {
+        const raw = input.value.replace(/\D/g, '');
+        const num = parseInt(raw) || 0;
+        input.value = num ? num.toLocaleString('en-US') : '';
+        document.getElementById('popYearlyPreview').textContent = num ? compactSip(num) : '—';
+        // Mirror to monthly
+        const monthly = Math.round(num / 12);
+        const mInput  = document.getElementById('popMonthlyInput');
+        mInput.value  = num ? monthly.toLocaleString('en-US') : '';
+        document.getElementById('popMonthlyPreview').textContent = num ? compactSip(monthly) : '—';
+    }
+
+    function confirmSipEdit() {
+        if (popEditIndex < 0) return;
+        const rawM   = document.getElementById('popMonthlyInput').value.replace(/\D/g, '');
+        const monthly = parseInt(rawM) || 0;
+        if (!monthly) { alert('Please enter a valid amount.'); return; }
+        if (!sipCustom[popEditIndex]) sipCustom[popEditIndex] = { ...sipSchedule[popEditIndex] };
+        sipCustom[popEditIndex].monthly = monthly;
+        sipCustom[popEditIndex].yearly  = monthly * 12;
+        closeSipEditPopup();
+        renderSipTable();
+    }
+
+    function saveSipEdits() {
+        sipSchedule = sipSchedule.map((row, i) =>
+            sipCustom[i] ? { ...row, ...sipCustom[i] } : row
+        );
+        sipCustom = sipCustom.map(() => null);
+        renderSipTable();
+        const btn = document.querySelector('.sip-save-btn');
+        const orig = btn.textContent;
+        btn.textContent = '✅ Saved!';
+        setTimeout(() => btn.textContent = orig, 1500);
+    }
+
+    function resetSipTable() {
+        sipCustom = sipCustom.map(() => null);
+        const sip       = parseFormattedNumber(document.getElementById('sip').value);
+        const scRaw     = document.getElementById('sipYearlyChange').value;
+        const sipChange = scRaw === '' ? 0 : parseFloat(scRaw) / 100;
+        const stopYrRaw = document.getElementById('sipStopYear').value;
+        const sipStop   = stopYrRaw !== '' ? parseInt(stopYrRaw) : Infinity;
+        let cur = sip;
+        sipSchedule = sipSchedule.map((row, i) => {
+            const monthly = Math.round(cur);
+            const entry   = { year: row.year, monthly, yearly: monthly * 12 };
+            if (i + 1 < sipStop) cur *= (1 + sipChange);
+            return entry;
+        });
+        renderSipTable();
+    }
+
+    // Sync main calendar toggle with modal
+    document.getElementById('useCalendarYears').addEventListener('change', function() {
+        const mCalCheck = document.getElementById('modalCalYears');
+        if (mCalCheck) mCalCheck.checked = this.checked;
+    });
+</script>
+</body>
+</html>
