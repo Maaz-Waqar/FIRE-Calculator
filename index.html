@@ -1263,11 +1263,11 @@
 
     <div class="input-group" id="sipContribStopGroup">
         <label>Stop SIP Contributions — Optional
-            <span class="info-icon">i<span class="tooltip">Stop making monthly SIP contributions entirely after this many years. Leave blank to keep investing for the full period. Cannot exceed your investment period.</span></span>
+            <span class="info-icon">i<span class="tooltip">Stop making monthly SIP contributions once your total amount contributed reaches a set figure, or after a set number of years. Leave blank to keep investing for the full period.</span></span>
         </label>
         <div style="display:flex;gap:0;background:#0f0f0f;border:2px solid #1a1a1a;border-radius:12px;padding:4px;margin-bottom:12px;">
             <button id="sipContribStopModeYear" onclick="setSipContribStopMode('year')" class="sip-stop-mode-btn active">After N Years</button>
-            <button id="sipContribStopModeAmt"  onclick="setSipContribStopMode('amount')" class="sip-stop-mode-btn">When SIP Reaches</button>
+            <button id="sipContribStopModeAmt"  onclick="setSipContribStopMode('amount')" class="sip-stop-mode-btn">When Total Contributed</button>
         </div>
         <div id="sipContribStopYearField">
             <input type="number" id="sipContribStopYear" placeholder="e.g. 15" inputmode="numeric"
@@ -1275,8 +1275,8 @@
             <small>SIP contributions stop entirely after this many years. Leave blank to keep contributing till the end.</small>
         </div>
         <div id="sipContribStopAmtField" style="display:none;">
-            <input type="text" id="sipContribStopAmount" placeholder="e.g. 1,00,000" inputmode="numeric" oninput="formatNumberInput(this)">
-            <small>SIP contributions stop once your monthly SIP reaches this amount.</small>
+            <input type="text" id="sipContribStopAmount" placeholder="e.g. 50,00,000" inputmode="numeric" oninput="formatNumberInput(this)">
+            <small>SIP contributions stop once your cumulative total contributed reaches this amount.</small>
         </div>
     </div>
 
@@ -1584,6 +1584,7 @@
     let lastSipRate        = 0;
     let lastSip            = 0;
     let lastSipChange      = 0;
+    let lastContribStopAmt = 0;         // cumulative amount threshold (0 = not set)
 
     /* ─── HELPERS ─── */
     function parseFormattedNumber(str) {
@@ -1769,7 +1770,7 @@
         document.getElementById('customSipBadge').style.display = 'none';
         lastWealth = 0; lastYears = 0; lastTotalContrib = 0;
         lastLabels = []; lastWealthData = []; lastContribData = []; lastFireLine = null;
-        lastSipContribStop = Infinity; lastSipRate = 0; lastSip = 0; lastSipChange = 0;
+        lastSipContribStop = Infinity; lastSipRate = 0; lastSip = 0; lastSipChange = 0; lastContribStopAmt = 0;
         sipSchedule = []; sipCustom = []; hasCustomSipSchedule = false;
         if (chart) { chart.destroy(); chart = null; }
     }
@@ -1793,7 +1794,7 @@
             }
         }
         // Resolve the SIP contribution stop year (stops contributing entirely)
-        const sipContribStop = getSipContribStopYear(sip, sipChange);
+        const sipContribStop = getSipContribStopYear(sip, sipChange, sipStopYear);
         const years          = parseInt(document.getElementById('years').value);
 
         const missing = [];
@@ -1804,6 +1805,12 @@
         if (sipStopMode === 'year') {
             const stopIncRaw = document.getElementById('sipStopYear').value;
             if (stopIncRaw !== '') {
+                const sipIncRaw = document.getElementById('sipYearlyChange').value;
+                if (sipIncRaw === '' || parseFloat(sipIncRaw) === 0) {
+                    highlightMissing(['sipYearlyChange']);
+                    showToast('Enter a Yearly SIP Increase % — it\'s required when Stop Increasing SIP is set');
+                    return;
+                }
                 const stopIncVal = parseInt(stopIncRaw);
                 if (isNaN(stopIncVal) || stopIncVal < 1 || stopIncVal > years) {
                     highlightMissing(['sipStopYear']);
@@ -1868,6 +1875,10 @@
             const rawLabels = [], wData = [], cData = [];
             let w = initial, totalC = initial;
 
+            // For amount-mode contrib stop: track cumulative SIP separately
+            const contribStopAmt = getSipContribStopAmount();
+            let cumSipContrib = 0;  // running total of SIP contributions (excl. initial)
+
             // Check if we already have a saved custom SIP schedule
             const hasValidSchedule = sipSchedule.length > 0 && sipSchedule.length === years && hasCustomSipSchedule;
 
@@ -1877,12 +1888,54 @@
                 sipCustom   = [];
                 hasCustomSipSchedule = false;
                 let curSip = sip;
+                let buildCumSip = 0;
                 for (let y = 1; y <= years; y++) {
-                    // After sipContribStop, monthly contribution is 0
-                    const monthlySip = y <= sipContribStop ? Math.round(curSip) : 0;
+                    let monthlySip;
+                    if (y > sipContribStop) {
+                        // Year-mode stop: already past stop year
+                        monthlySip = 0;
+                    } else if (contribStopAmt > 0) {
+                        // Amount mode: show the actual monthly contribution for this year
+                        const remaining = contribStopAmt - buildCumSip;
+                        if (remaining <= 0) {
+                            monthlySip = 0;
+                        } else {
+                            const fullMonthly = Math.round(curSip);
+                            const fullYearContrib = fullMonthly * 12;
+                            if (fullYearContrib <= remaining) {
+                                // Full year fits under the constraint
+                                monthlySip = fullMonthly;
+                            } else {
+                                // Partial year: only some months will contribute
+                                // Calculate how many complete months fit, then the remainder
+                                // For display: show the effective average monthly = remaining / 12
+                                // But for accuracy: show it as the exact partial
+                                const fullMonths = Math.floor(remaining / fullMonthly);
+                                const leftover   = remaining - fullMonths * fullMonthly;
+                                // Store as a special yearly entry: actual yearly = remaining
+                                monthlySip = fullMonthly; // monthly rate stays the same
+                                // override yearly to show exact remaining
+                                buildCumSip += remaining;
+                                sipSchedule.push({ year: y, monthly: fullMonthly, yearly: Math.round(remaining) });
+                                sipCustom.push(null);
+                                if (y < sipStopYear && remaining > 0) curSip *= (1 + sipChange);
+                                // Zero out all remaining years
+                                for (let ry = y + 1; ry <= years; ry++) {
+                                    sipSchedule.push({ year: ry, monthly: 0, yearly: 0 });
+                                    sipCustom.push(null);
+                                    if (y < sipStopYear) curSip *= (1 + sipChange);
+                                }
+                                break; // done building schedule
+                            }
+                        }
+                        if (monthlySip !== undefined) buildCumSip += monthlySip * 12;
+                    } else {
+                        monthlySip = Math.round(curSip);
+                    }
+                    if (monthlySip === undefined) continue;
                     sipSchedule.push({ year: y, monthly: monthlySip, yearly: monthlySip * 12 });
                     sipCustom.push(null);
-                    if (y < sipStopYear && y < sipContribStop) curSip *= (1 + sipChange);
+                    if (y < sipStopYear && y < sipContribStop && monthlySip > 0) curSip *= (1 + sipChange);
                 }
             }
 
@@ -1891,6 +1944,7 @@
             lastSipRate        = rate;
             lastSip            = sip;
             lastSipChange      = sipChange;
+            lastContribStopAmt = contribStopAmt;
 
             // Now loop and use sipSchedule (which may contain saved custom edits)
             for (let y = 1; y <= years; y++) {
@@ -1898,8 +1952,19 @@
                 const monthlySip = data.monthly;
 
                 for (let m = 0; m < 12; m++) {
-                    w = w * (1 + mRate) + monthlySip;
-                    totalC += monthlySip;
+                    // Amount-mode: zero out once cumulative SIP hits the target
+                    let actualSip = monthlySip;
+                    if (contribStopAmt > 0 && actualSip > 0) {
+                        if (cumSipContrib >= contribStopAmt) {
+                            actualSip = 0;
+                        } else if (cumSipContrib + actualSip > contribStopAmt) {
+                            // Partial: only contribute the exact remaining amount
+                            actualSip = contribStopAmt - cumSipContrib;
+                        }
+                    }
+                    w = w * (1 + mRate) + actualSip;
+                    totalC  += actualSip;
+                    cumSipContrib += actualSip;
                 }
 
                 // Deduct Zakat (2.5%) at end of each year if enabled
@@ -2283,7 +2348,7 @@
             //
             // Zakat (if enabled) is deducted annually in both cases.
 
-            const sipStillRunning = lastSipContribStop > investYears;
+            const sipStillRunning = lastSipContribStop > investYears || lastContribStopAmt > 0;
 
             // Read the "stop increasing SIP" year — Infinity if blank
             const scRaw2        = document.getElementById('sipYearlyChange').value;
@@ -2299,11 +2364,10 @@
                 }
             }
 
-            // Starting SIP for the extension: the SIP at the last year of the investment period
-            // (already accounts for step-ups and the sipContribStop logic)
-            let extCurSip = sipStillRunning
-                ? (sipSchedule.length > 0 ? sipSchedule[investYears - 1].monthly : 0)
-                : 0;
+            // Starting SIP for extension: last year's SIP from schedule
+            let extCurSip = (sipSchedule.length > 0 ? sipSchedule[investYears - 1].monthly : 0);
+            // Track cumulative SIP for amount-mode (includes all contributions already made)
+            let extCumSip = lastContribStopAmt > 0 ? lastTotalContrib - (parseFormattedNumber(document.getElementById('initialInvestment').value)) : 0;
 
             let extFireYear   = null;
             let extFireTarget = 0;
@@ -2311,12 +2375,24 @@
             let w = lastWealth;
             for (let y = investYears + 1; y <= 100; y++) {
                 // Step up SIP for this year if still running and increase not yet frozen
-                if (sipStillRunning && y - 1 < sipStopYearExt) {
+                if (extCurSip > 0 && y - 1 < sipStopYearExt) {
                     extCurSip = Math.round(extCurSip * (1 + sipChangeExt));
                 }
-                const monthlySipThisYear = sipStillRunning ? extCurSip : 0;
+
                 for (let m = 0; m < 12; m++) {
-                    w = w * (1 + mRate) + monthlySipThisYear;
+                    let actualSip = extCurSip;
+                    // Amount-mode: zero once cumulative hits threshold
+                    if (lastContribStopAmt > 0 && actualSip > 0) {
+                        if (extCumSip >= lastContribStopAmt) {
+                            actualSip = 0;
+                        } else if (extCumSip + actualSip > lastContribStopAmt) {
+                            actualSip = lastContribStopAmt - extCumSip;
+                        }
+                    }
+                    // Year-mode: zero once past contrib stop year
+                    if (lastSipContribStop <= investYears) actualSip = 0;
+                    w = w * (1 + mRate) + actualSip;
+                    extCumSip += actualSip;
                 }
                 if (zakatEnabled) w = w * (1 - 0.025);
                 const target = fireTarget(expenses, expIncrease, multiplier, y);
@@ -2701,6 +2777,31 @@
         renderSipTable();
     }
 
+    function showSipAccumWarning(totalCustom, limit) {
+        document.getElementById('sipAccumWarnTotal').textContent = formatCurrency(totalCustom);
+        document.getElementById('sipAccumWarnLimit').textContent = formatCurrency(limit);
+        document.getElementById('sipAccumWarning').style.display = 'flex';
+    }
+
+    function closeSipAccumWarning(proceed) {
+        document.getElementById('sipAccumWarning').style.display = 'none';
+        if (proceed) {
+            // Remove the constraint and proceed to save
+            lastContribStopAmt = 0;
+            // Clear the amount input so it's no longer active
+            document.getElementById('sipContribStopAmount').value = '';
+            // Now do the actual save
+            const hadEdits = sipCustom.some(x => x !== null);
+            sipSchedule = sipSchedule.map((row, i) => sipCustom[i] ? { ...row, ...sipCustom[i] } : row);
+            if (hadEdits) { hasCustomSipSchedule = true; pendingSimulate = true; }
+            sipCustom = sipCustom.map(() => null);
+            renderSipTable();
+            const btn = document.querySelector('.sip-save-btn');
+            if (btn) { const orig = btn.textContent; btn.textContent = '✅ Saved!'; setTimeout(() => btn.textContent = orig, 1500); }
+        }
+        // If not proceeding, leave edits in sipCustom — user can keep editing
+    }
+
     function showSipLimitWarning(monthly, stopAmt) {
         document.getElementById('sipLimitWarnAmt').textContent    = formatCurrency(monthly);
         document.getElementById('sipLimitWarnLimit').textContent  = formatCurrency(stopAmt);
@@ -2720,6 +2821,16 @@
     let pendingSimulate = false;  // set true after save, triggers prompt on close
 
     function saveSipEdits() {
+        // If a cumulative SIP constraint is active, check if the total custom schedule exceeds it
+        if (lastContribStopAmt > 0) {
+            const merged = sipSchedule.map((row, i) => sipCustom[i] ? { ...row, ...sipCustom[i] } : row);
+            const totalCustom = merged.reduce((sum, row) => sum + row.yearly, 0);
+            if (totalCustom > lastContribStopAmt) {
+                showSipAccumWarning(totalCustom, lastContribStopAmt);
+                return; // block save until user confirms
+            }
+        }
+
         // Merge unsaved edits into sipSchedule
         const hadEdits = sipCustom.some(x => x !== null);
         sipSchedule = sipSchedule.map((row, i) =>
@@ -2859,21 +2970,22 @@
         input.classList.remove('input-error');
     }
 
-    /* Resolve sipContribStopYear from inputs — returns Infinity if not set */
-    function getSipContribStopYear(sip, sipChange) {
+    /* Resolve sipContribStopYear from inputs (year mode only).
+       Amount mode is handled directly in the calculation loop month-by-month
+       so contributions stop the exact month the cumulative total is reached. */
+    function getSipContribStopYear(sip, sipChange, sipStopYear) {
         if (sipContribStopMode === 'year') {
             const raw = document.getElementById('sipContribStopYear').value;
             return raw !== '' ? parseInt(raw) : Infinity;
-        } else {
-            const stopAmt = parseFormattedNumber(document.getElementById('sipContribStopAmount').value);
-            if (stopAmt > 0 && sip > 0) {
-                if (sipChange <= 0) return sip >= stopAmt ? 0 : Infinity;
-                let tmpSip = sip, tmpY = 0;
-                while (tmpSip < stopAmt && tmpY < 1000) { tmpSip *= (1 + sipChange); tmpY++; }
-                return tmpY;
-            }
-            return Infinity;
         }
+        // Amount mode: return Infinity — the loop handles it month by month
+        return Infinity;
+    }
+
+    /* For amount mode: get the target cumulative amount (0 if not set) */
+    function getSipContribStopAmount() {
+        if (sipContribStopMode !== 'amount') return 0;
+        return parseFormattedNumber(document.getElementById('sipContribStopAmount').value) || 0;
     }
 
 
@@ -3036,6 +3148,22 @@
 </div>
 
 <!-- SIP LIMIT WARNING -->
+<input type="hidden" id="sipLimitWarnPending" value="0">
+<div id="sipAccumWarning" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:4000;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px);">
+    <div style="background:#0d0d0d;border:1px solid #ff5f5f;border-radius:24px;padding:36px 32px;width:100%;max-width:420px;animation:fadeSlideUp 0.3s ease both;text-align:center;">
+        <div style="font-size:40px;margin-bottom:16px;">⚠️</div>
+        <h3 style="color:#ff5f5f;font-size:18px;font-weight:800;margin-bottom:12px;letter-spacing:-0.3px;">Exceeds SIP Accumulation Limit</h3>
+        <p style="color:#888;font-size:14px;line-height:1.7;margin-bottom:8px;">
+            Your custom SIP schedule totals <strong style="color:#fff" id="sipAccumWarnTotal"></strong>, which exceeds your accumulation constraint of <strong style="color:#fff" id="sipAccumWarnLimit"></strong>.
+        </p>
+        <p style="color:#666;font-size:13px;line-height:1.6;margin-bottom:28px;">If you continue, the SIP accumulation constraint will be <strong style="color:#ff8c8c">removed</strong>. Or go back and adjust your schedule.</p>
+        <div style="display:flex;gap:12px;">
+            <button onclick="closeSipAccumWarning(false)" style="flex:1;padding:15px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;color:#888;font-size:14px;font-weight:600;cursor:pointer;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">Go Back</button>
+            <button onclick="closeSipAccumWarning(true)" style="flex:1;padding:15px;background:#ff5f5f;border:none;border-radius:12px;color:#fff;font-size:14px;font-weight:800;cursor:pointer;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Remove Constraint & Save</button>
+        </div>
+    </div>
+</div>
+
 <input type="hidden" id="sipLimitWarnPending" value="0">
 <div id="sipLimitWarning" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:4000;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px);">
     <div style="background:#0d0d0d;border:1px solid #ff5f5f;border-radius:24px;padding:36px 32px;width:100%;max-width:400px;animation:fadeSlideUp 0.3s ease both;text-align:center;">
