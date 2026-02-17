@@ -997,6 +997,11 @@
         <h2>Projected Wealth</h2>
         <div class="amount" id="finalWealth">PKR 0</div>
         <p class="years-label" id="yearsLabel">after 20 years</p>
+        
+        <!-- Custom SIP indicator -->
+        <div id="customSipBadge" style="display:none;background:rgba(0,0,0,0.25);border:1.5px solid rgba(0,0,0,0.35);border-radius:8px;padding:8px 14px;margin:0 auto 20px;max-width:fit-content;">
+            <span style="font-size:11px;color:#000;font-weight:800;letter-spacing:0.8px;">✦ USING YOUR CUSTOM SIP SCHEDULE</span>
+        </div>
 
         <!-- Contribution / Profit / Total breakdown -->
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:28px;text-align:left;">
@@ -1198,10 +1203,11 @@
     let incomeFrequency = 'monthly';
     const inflationRate = 0.10;
 
-    // SIP schedule: array of {year, monthly, yearly, edited}
-    let sipSchedule     = [];
-    let sipCustom       = [];
-    let calendarStart   = new Date().getFullYear();
+    // SIP schedule: array of {year, monthly, yearly}
+    let sipSchedule       = [];
+    let sipCustom         = [];   // tracks unsaved edits
+    let hasCustomSipSchedule = false;  // true if user has saved custom edits
+    let calendarStart     = new Date().getFullYear();
 
     /* ─── HELPERS ─── */
     function parseFormattedNumber(str) {
@@ -1344,8 +1350,10 @@
         document.getElementById('inflationAdjusted').checked = false;
         document.getElementById('inflationRateRow').style.display = 'none';
         document.getElementById('useCalendarYears').checked = false;
+        document.getElementById('customSipBadge').style.display = 'none';
         lastWealth = 0; lastYears = 0; lastTotalContrib = 0;
         lastLabels = []; lastWealthData = []; lastContribData = []; lastFireLine = null;
+        sipSchedule = []; sipCustom = []; hasCustomSipSchedule = false;
         if (chart) { chart.destroy(); chart = null; }
     }
 
@@ -1386,21 +1394,34 @@
 
             const mRate = rate / 12;
             const rawLabels = [], wData = [], cData = [];
-            let w = initial, curSip = sip, totalC = initial;
+            let w = initial, totalC = initial;
 
-            sipSchedule = [];
-            sipCustom   = [];
+            // Check if we already have a saved custom SIP schedule
+            const hasValidSchedule = sipSchedule.length > 0 && sipSchedule.length === years && hasCustomSipSchedule;
 
+            // If no saved schedule OR years changed, rebuild from formula
+            if (!hasValidSchedule) {
+                sipSchedule = [];
+                sipCustom   = [];
+                hasCustomSipSchedule = false;
+                let curSip = sip;
+                for (let y = 1; y <= years; y++) {
+                    const monthlySip = Math.round(curSip);
+                    sipSchedule.push({ year: y, monthly: monthlySip, yearly: monthlySip * 12 });
+                    sipCustom.push(null);
+                    if (y < sipStopYear) curSip *= (1 + sipChange);
+                }
+            }
+
+            // Now loop and use sipSchedule (which may contain saved custom edits)
             for (let y = 1; y <= years; y++) {
-                const monthlySip = Math.round(curSip);
-                sipSchedule.push({ year: y, monthly: monthlySip, yearly: monthlySip * 12 });
-                sipCustom.push(null);
+                const data = sipCustom[y - 1] || sipSchedule[y - 1];
+                const monthlySip = data.monthly;
 
                 for (let m = 0; m < 12; m++) {
-                    w = w * (1 + mRate) + curSip;
-                    totalC += curSip;
+                    w = w * (1 + mRate) + monthlySip;
+                    totalC += monthlySip;
                 }
-                if (y < sipStopYear) curSip *= (1 + sipChange);
                 rawLabels.push(y);
                 wData.push(Math.round(w));
                 cData.push(Math.round(totalC));
@@ -1427,6 +1448,14 @@
 
             updateYearsLabel();
             updateIncomeDisplay(w);
+
+            // Show custom SIP badge if saved custom schedule is active
+            const customBadge = document.getElementById('customSipBadge');
+            if (hasCustomSipSchedule) {
+                customBadge.style.display = 'block';
+            } else {
+                customBadge.style.display = 'none';
+            }
 
             document.getElementById('resultsSection').style.display        = 'block';
             document.getElementById('chartSection').style.display          = 'block';
@@ -1948,9 +1977,13 @@
     }
 
     function saveSipEdits() {
+        // Merge edits into sipSchedule permanently
         sipSchedule = sipSchedule.map((row, i) =>
             sipCustom[i] ? { ...row, ...sipCustom[i] } : row
         );
+        // Mark that we have custom schedule
+        hasCustomSipSchedule = sipCustom.some(x => x !== null);
+        // Clear the unsaved edit tracking
         sipCustom = sipCustom.map(() => null);
         renderSipTable();
         const btn = document.querySelector('.sip-save-btn');
@@ -1961,6 +1994,7 @@
 
     function resetSipTable() {
         sipCustom = sipCustom.map(() => null);
+        hasCustomSipSchedule = false;  // Clear custom flag
         const sip       = parseFormattedNumber(document.getElementById('sip').value);
         const scRaw     = document.getElementById('sipYearlyChange').value;
         const sipChange = scRaw === '' ? 0 : parseFloat(scRaw) / 100;
