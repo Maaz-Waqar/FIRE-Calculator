@@ -3,13 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portfolio Tracker & FIRE Calculator</title>
+    <title>Wealth Calculator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #000000;
             min-height: 100vh;
             padding: 24px 16px;
@@ -313,6 +316,24 @@
             letter-spacing: -2px;
         }
 
+
+        .fire-preview .toggle-btn {
+            background: transparent;
+            color: #555;
+            border: none;
+            padding: 7px 14px;
+            font-size: 12px;
+        }
+
+        .fire-preview .toggle-btn.active {
+            background: #bef202;
+            color: #000;
+            font-weight: 700;
+        }
+
+        /* fire-preview is dark, override toggle-btn defaults */
+        #firePreview { background: #0a0a0a; border: 1px solid #2a2a2a; }
+
         /* ── FIRE PREVIEW ── */
         .fire-preview {
             display: flex;
@@ -364,6 +385,48 @@
             color: #888;
             font-size: 14px;
             line-height: 1.8;
+        }
+
+        .fire-stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            margin: 20px 0 22px;
+            text-align: left;
+        }
+
+        .fire-stat-card {
+            background: #111;
+            border: 1px solid #1e1e1e;
+            border-radius: 16px;
+            padding: 16px 14px;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .fire-stat-card:hover {
+            transform: translateY(-3px);
+            border-color: #2a2a2a;
+        }
+
+        .fire-stat-label {
+            font-size: 10px;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .fire-stat-value {
+            font-size: 16px;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        .fire-stat-sub {
+            font-size: 10px;
+            color: #444;
+            margin-top: 4px;
         }
 
         .swipe-hint {
@@ -503,7 +566,7 @@
             z-index: 1000;
             box-shadow: 0 8px 24px rgba(0,0,0,0.6);
             width: max-content;
-            max-width: 240px;
+            max-width: min(240px, calc(100vw - 40px));
             white-space: normal;
             border: 1px solid #2a2a2a;
         }
@@ -614,12 +677,238 @@
 
         .fire-info-box .emoji { font-size: 28px; flex-shrink: 0; }
         .fire-info-box strong { color: #bef202; font-size: 15px; font-weight: 700; letter-spacing: 0.5px; }
-        .fire-info-box p { margin: 8px 0 0; font-size: 13px; color: #909090; line-height: 1.7; }
+        .fire-info-box p { margin: 8px 0 0; font-size: 13px; color: #909090; line-height: 1.7; white-space: normal; word-break: break-word; overflow-wrap: break-word; }
+
+        /* ── PASSIVE INFO BOX (inside yellow card) ── */
+        .passive-info-box {
+            border-radius: 16px;
+            padding: 20px 22px;
+            margin-bottom: 22px;
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            background: rgba(0,0,0,0.62);
+            border: 1px solid rgba(0,0,0,0.2);
+            border-left: 4px solid #000000;
+            text-align: left;
+        }
+
+        .passive-info-box .emoji { font-size: 24px; flex-shrink: 0; padding-top: 2px; }
+        .passive-info-box strong { color: #bef202; font-size: 14px; font-weight: 700; display: block; margin-bottom: 4px; }
+        .passive-info-box p { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.7; margin: 0; white-space: normal; word-break: break-word; overflow-wrap: break-word; }
+
+        /* ── FEATURED INCOME CARD ── */
+        .income-card-featured {
+            background: rgba(0,0,0,0.65) !important;
+            border-color: rgba(190,242,2,0.25) !important;
+            padding: 24px 22px !important;
+            margin-bottom: 12px;
+        }
+
+        .income-card-featured .card-label { opacity: 0.7 !important; font-size: 12px !important; }
+        .income-card-featured .card-value { font-size: 28px !important; color: #bef202 !important; }
+
+        .income-card-custom {
+            background: rgba(0,0,0,0.4) !important;
+            border-color: rgba(190,242,2,0.2) !important;
+            margin-top: 0 !important;
+        }
+
+        /* ── FIRE STAT STACK (replaces cluttered 3-col grid) ── */
+        .fire-stat-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 20px 0 24px;
+        }
+
+        .fire-stat-row-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 20px;
+            background: #111;
+            border: 1px solid #1e1e1e;
+            border-radius: 16px;
+            gap: 16px;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .fire-stat-row-card:hover {
+            transform: translateX(4px);
+            border-color: #2a2a2a;
+        }
+
+        .fsr-danger { border-left: 3px solid transparent; }
+        .fire-stat-row-card:hover { border-left: 3px solid #ff5f5f !important; border-color: #ff5f5f; }
+
+        .fsr-left { flex: 1; text-align: left; }
+
+        .fsr-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #ccc;
+            margin-bottom: 4px;
+        }
+
+        .fsr-sub {
+            font-size: 11px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .fsr-value {
+            font-size: 18px;
+            font-weight: 900;
+            color: #fff;
+            letter-spacing: -0.5px;
+            white-space: nowrap;
+            text-align: right;
+        }
+
+        @media (max-width: 480px) {
+            .fire-stat-row-card { flex-direction: column; align-items: flex-start; gap: 8px; }
+            .fsr-value { font-size: 20px; }
+        }
+
+
+        /* ── BREAKDOWN GRID ── */
+        .breakdown-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            text-align: left;
+        }
+
+        .bk-card {
+            background: rgba(0,0,0,0.35);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px;
+            padding: 18px 14px;
+            cursor: pointer;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+            position: relative;
+        }
+
+        .bk-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+            border-color: rgba(190,242,2,0.4);
+        }
+
+        .bk-icon {
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .bk-label {
+            font-size: 10px;
+            opacity: 0.5;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        .bk-value {
+            font-size: 16px;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -0.3px;
+        }
+
+        .bk-profit { color: #bef202; }
+
+        .bk-tap {
+            font-size: 9px;
+            color: #333;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-top: 8px;
+            font-weight: 600;
+        }
+
+        .bk-card:hover .bk-tap { color: rgba(190,242,2,0.5); }
+
+        @media (max-width: 600px) {
+            .breakdown-grid { gap: 8px; }
+            .bk-card { padding: 14px 10px; }
+            .bk-value { font-size: 13px; }
+        }
+
+
+        /* ── TOAST NOTIFICATION ── */
+        #toastBar {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-80px);
+            background: #111;
+            border: 1px solid #ff5f5f;
+            border-left: 4px solid #ff5f5f;
+            color: #fff;
+            padding: 14px 22px;
+            border-radius: 14px;
+            font-size: 13px;
+            font-weight: 600;
+            z-index: 9999;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.7);
+            transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s ease;
+            opacity: 0;
+            white-space: normal;
+            word-break: break-word;
+            max-width: calc(100vw - 32px);
+            width: max-content;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        #toastBar.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* ── INPUT ERROR STATE ── */
+        input.input-error {
+            border-color: #ff5f5f !important;
+            box-shadow: 0 0 0 4px rgba(255,95,95,0.12) !important;
+            animation: shakeInput 0.35s ease;
+        }
+
+        @keyframes shakeInput {
+            0%,100% { transform: translateX(0); }
+            20%      { transform: translateX(-6px); }
+            60%      { transform: translateX(6px); }
+        }
+
+        /* ── SIP STOP MODE BUTTONS ── */
+        .sip-stop-mode-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 9px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .sip-stop-mode-btn.active {
+            background: #bef202;
+            color: #000;
+        }
+
+        .sip-stop-mode-btn:not(.active) {
+            background: transparent;
+            color: #555;
+        }
 
         /* ── MOBILE ── */
         @media (max-width: 600px) {
             .container { padding: 32px 20px; }
-            h1 { font-size: 26px; margin-bottom: 32px; }
+            h1 { font-size: 26px; margin-bottom: 48px; padding-right: 0; padding-left: 0; }
+            h1 button { position: static !important; transform: none !important; display: block; margin: 12px auto 0; font-size: 12px; padding: 8px 16px; }
             .result-box { padding: 36px 22px; }
             .result-box .amount { font-size: 40px; }
             .income-grid { gap: 10px; }
@@ -631,7 +920,13 @@
             .suggestion-card { flex: 0 0 92%; }
             .suggestion-card .s-value { font-size: 28px; }
             .sip-modal-box { padding: 24px 16px; margin: 12px; border-radius: 20px; }
+            .info-icon .tooltip { left: auto; right: 0; transform: none; max-width: 220px; }
+            .info-icon .tooltip::after { left: auto; right: 12px; transform: none; }
+            .fire-info-box p, .passive-info-box p { white-space: normal; word-break: break-word; overflow-wrap: break-word; }
         }
+
+
+        /* breakdownModal uses style.display=flex directly */
 
         /* ── SIP MODAL ── */
         .sip-modal-overlay {
@@ -908,7 +1203,10 @@
 </head>
 <body>
 <div class="container">
-    <h1>📊 Portfolio Tracker</h1>
+    <h1 style="position:relative;text-align:center;margin-bottom:44px;font-size:34px;font-weight:800;letter-spacing:-0.8px;color:#ffffff;padding-right:110px;padding-left:110px;">
+        Wealth Calculator
+        <button onclick="clearAll()" style="position:absolute;top:50%;right:0;transform:translateY(-50%);background:#1a1a1a;border:1px solid #2a2a2a;color:#666;padding:8px 14px;border-radius:12px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;letter-spacing:0.3px;white-space:nowrap;" onmouseover="this.style.borderColor='#bef202';this.style.color='#bef202'" onmouseout="this.style.borderColor='#2a2a2a';this.style.color='#666'">✕ Clear All</button>
+    </h1>
 
     <div class="input-group">
         <label>Initial Investment (PKR)
@@ -941,12 +1239,45 @@
         <input type="number" id="sipYearlyChange" placeholder="10" step="0.1" inputmode="decimal">
     </div>
 
-    <div class="input-group">
-        <label>Stop Increasing SIP after (Years) — Optional
-            <span class="info-icon">i<span class="tooltip">After this many years, your SIP stays fixed and stops growing. Useful if you expect your income growth to slow down or responsibilities to increase.</span></span>
+    <div class="input-group" id="sipStopGroup">
+        <label>Stop Increasing SIP — Optional
+            <span class="info-icon">i<span class="tooltip">Choose when to freeze your SIP increases: after a set number of years, or once your monthly SIP hits a specific amount.</span></span>
         </label>
-        <input type="number" id="sipStopYear" placeholder="e.g. 10" inputmode="numeric">
-        <small>Leave blank to keep increasing SIP for the full investment period</small>
+        <div style="display:flex;gap:0;background:#0f0f0f;border:2px solid #1a1a1a;border-radius:12px;padding:4px;margin-bottom:12px;">
+            <button id="sipStopModeYear" onclick="setSipStopMode('year')" class="sip-stop-mode-btn active">
+                After N Years
+            </button>
+            <button id="sipStopModeAmt" onclick="setSipStopMode('amount')" class="sip-stop-mode-btn">
+                When SIP Reaches
+            </button>
+        </div>
+        <div id="sipStopYearField">
+            <input type="number" id="sipStopYear" placeholder="e.g. 10" inputmode="numeric" oninput="validateSipStopYear(this)">
+            <small>SIP stops growing after this many years</small>
+        </div>
+        <div id="sipStopAmtField" style="display:none;">
+            <input type="text" id="sipStopAmount" placeholder="e.g. 50,000" inputmode="numeric" oninput="formatNumberInput(this)">
+            <small>SIP stops growing once it reaches this monthly amount</small>
+        </div>
+    </div>
+
+    <div class="input-group" id="sipContribStopGroup">
+        <label>Stop SIP Contributions — Optional
+            <span class="info-icon">i<span class="tooltip">Stop making monthly SIP contributions entirely after this many years. Leave blank to keep investing for the full period. Cannot exceed your investment period.</span></span>
+        </label>
+        <div style="display:flex;gap:0;background:#0f0f0f;border:2px solid #1a1a1a;border-radius:12px;padding:4px;margin-bottom:12px;">
+            <button id="sipContribStopModeYear" onclick="setSipContribStopMode('year')" class="sip-stop-mode-btn active">After N Years</button>
+            <button id="sipContribStopModeAmt"  onclick="setSipContribStopMode('amount')" class="sip-stop-mode-btn">When SIP Reaches</button>
+        </div>
+        <div id="sipContribStopYearField">
+            <input type="number" id="sipContribStopYear" placeholder="e.g. 15" inputmode="numeric"
+                   oninput="validateSipContribStopYear(this)">
+            <small>SIP contributions stop entirely after this many years. Leave blank to keep contributing till the end.</small>
+        </div>
+        <div id="sipContribStopAmtField" style="display:none;">
+            <input type="text" id="sipContribStopAmount" placeholder="e.g. 1,00,000" inputmode="numeric" oninput="formatNumberInput(this)">
+            <small>SIP contributions stop once your monthly SIP reaches this amount.</small>
+        </div>
     </div>
 
     <div class="input-group">
@@ -957,15 +1288,23 @@
     </div>
 
     <button class="calc-btn" onclick="calculateWealth()">📊 Calculate my Expected Wealth</button>
-    <button class="calc-btn" onclick="clearAll()" style="margin-top:10px;background:#1a1a1a;color:#888;box-shadow:none;border:1px solid #2a2a2a;">🗑 Clear All Values</button>
 
     <!-- SIP BREAKDOWN BUTTON (shown after calculation) -->
     <div id="sipBreakdownBtn" style="display:none; margin-top:16px;">
         <button onclick="openSipModal()"
             style="width:100%;padding:14px 20px;background:#0f0f0f;color:#bef202;border:1px solid #2a2a2a;border-radius:14px;font-size:15px;font-weight:600;cursor:pointer;transition:all 0.2s;letter-spacing:0.3px;"
             onmouseover="this.style.borderColor='#bef202'" onmouseout="this.style.borderColor='#2a2a2a'">
-            📋 View SIP Amount Year by Year
+            ✏️ Make Your Own SIP Plan
         </button>
+    </div>
+
+    <!-- ZAKAT TOGGLE -->
+    <div id="zakatToggleSection" style="display:none;margin-top:12px;">
+        <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:16px 20px;background:#0f0f0f;border-radius:14px;border:1px solid #1a1a1a;transition:border-color 0.2s;" onmouseover="this.style.borderColor='#2a2a2a'" onmouseout="this.style.borderColor='#1a1a1a'">
+            <input type="checkbox" id="zakatDeduction" style="width:20px;height:20px;cursor:pointer;accent-color:#bef202;" onchange="onZakatToggle()">
+            <span style="font-weight:600;color:#ffffff;font-size:14px;flex:1;">Simulate Zakat Deductions</span>
+            <span class="info-icon" style="margin-left:0;">i<span class="tooltip">Deducts 2.5% Zakat annually from your projected wealth. Zakat is calculated on the total wealth at the end of each year.</span></span>
+        </label>
     </div>
 
     <!-- LOADER -->
@@ -1004,18 +1343,32 @@
         </div>
 
         <!-- Contribution / Profit / Total breakdown -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:28px;text-align:left;">
-            <div style="background:rgba(0,0,0,0.3);border-radius:12px;padding:14px 12px;">
-                <div style="font-size:10px;opacity:0.5;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;">Total Invested</div>
-                <div style="font-size:16px;font-weight:800;color:#fff;" id="totalContrib">PKR 0</div>
+        <div class="breakdown-grid" style="margin-bottom:28px;">
+            <div class="bk-card" onclick="openBreakdownModal()">
+                <div class="bk-icon">💰</div>
+                <div class="bk-label">Total Invested</div>
+                <div class="bk-value" id="totalContrib">PKR 0</div>
+                <div class="bk-tap">tap for details</div>
             </div>
-            <div style="background:rgba(0,0,0,0.3);border-radius:12px;padding:14px 12px;">
-                <div style="font-size:10px;opacity:0.5;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;">Total Profit</div>
-                <div style="font-size:16px;font-weight:800;color:#bef202;" id="totalProfit">PKR 0</div>
+            <div class="bk-card" onclick="openBreakdownModal()">
+                <div class="bk-icon">📈</div>
+                <div class="bk-label">Total Profit</div>
+                <div class="bk-value bk-profit" id="totalProfit">PKR 0</div>
+                <div class="bk-tap">tap for details</div>
             </div>
-            <div style="background:rgba(0,0,0,0.3);border-radius:12px;padding:14px 12px;">
-                <div style="font-size:10px;opacity:0.5;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;">Total Wealth</div>
-                <div style="font-size:16px;font-weight:800;color:#fff;" id="totalWealthBreakdown">PKR 0</div>
+            <div class="bk-card" onclick="openBreakdownModal()">
+                <div class="bk-icon">🏆</div>
+                <div class="bk-label">Total Wealth</div>
+                <div class="bk-value" id="totalWealthBreakdown">PKR 0</div>
+                <div class="bk-tap">tap for details</div>
+            </div>
+        </div>
+
+        <div class="passive-info-box">
+            <span class="emoji">💸</span>
+            <div>
+                <strong>Passive Income from Your Wealth</strong>
+                <p>Estimated income you could generate by deploying your projected wealth into different asset classes. The top row uses your own projected return (<strong id="yourReturnLabel" style="color:#bef202;">12%</strong>) — the others show what lower-risk, income-focused strategies would yield. Use Custom ROI to calculate with any rate you choose.</p>
             </div>
         </div>
 
@@ -1027,14 +1380,21 @@
             </div>
         </div>
 
+        <!-- Your Return — full width featured card -->
+        <div class="income-card income-card-featured">
+            <div class="card-label">Your Return (<span id="yourReturnPct">12</span>%)</div>
+            <div class="card-value" id="yourReturnIncome">PKR 0</div>
+        </div>
+
+        <!-- 2×2 lower-risk alternatives -->
         <div class="income-grid">
             <div class="income-card">
-                <div class="card-label">Fixed Deposit (7%)</div>
-                <div class="card-value" id="fdIncome">PKR 0</div>
+                <div class="card-label">Govt Bonds (7%)</div>
+                <div class="card-value" id="dividendIncome">PKR 0</div>
             </div>
             <div class="income-card">
-                <div class="card-label">Dividend Yield (10%)</div>
-                <div class="card-value" id="dividendIncome">PKR 0</div>
+                <div class="card-label">Fixed Deposit (8%)</div>
+                <div class="card-value" id="fdIncome">PKR 0</div>
             </div>
             <div class="income-card">
                 <div class="card-label">Rental Yield (6%)</div>
@@ -1051,11 +1411,17 @@
                 <input type="checkbox" id="enableCustomRoi" onchange="toggleCustomRoi()">
                 Custom ROI
             </label>
-            <div id="customRoiInput" class="hidden custom-roi-input-row">
-                <input type="number" id="customRoi" value="8" step="0.1"
-                       inputmode="decimal" oninput="updateCustomIncome()">
-                <span class="custom-roi-pct">%</span>
-                <span class="custom-roi-value" id="customIncome">PKR 0</span>
+            <div id="customRoiInput" class="hidden">
+                <div style="display:flex;align-items:center;gap:10px;margin:10px 0 14px;">
+                    <input type="number" id="customRoi" value="8" step="0.1" inputmode="decimal"
+                           oninput="updateCustomIncome()"
+                           style="width:80px;padding:10px 14px;border-radius:10px;border:1px solid rgba(0,0,0,0.3);background:rgba(0,0,0,0.2);color:#000;font-size:15px;font-weight:700;">
+                    <span class="custom-roi-pct">%</span>
+                </div>
+                <div class="income-card income-card-custom">
+                    <div class="card-label">Custom ROI (<span id="customRoiLabel">8</span>%)</div>
+                    <div class="card-value" id="customIncome">PKR 0</div>
+                </div>
             </div>
         </div>
     </div>
@@ -1115,9 +1481,13 @@
                 <small>💡 <strong style="color:#bef202">25× is the global FIRE standard.</strong> Choose 30× for extra security, or 20× for lean FIRE.</small>
             </div>
 
-            <!-- FIRE number preview -->
+            <!-- FIRE number preview with toggle -->
             <div id="firePreview" class="fire-preview hidden">
-                <span class="fire-preview-label">Your FIRE Number (Today)</span>
+                <div style="display:flex;gap:4px;background:#1a1a1a;padding:4px;border-radius:10px;margin-bottom:14px;border:1px solid #2a2a2a;">
+                    <button class="toggle-btn active" id="firePrevTodayBtn" onclick="setFirePreviewMode('today')" style="flex:1;">Today's Number</button>
+                    <button class="toggle-btn" id="firePrevInflBtn" onclick="setFirePreviewMode('inflated')" style="flex:1;">At Year N</button>
+                </div>
+                <span class="fire-preview-label" id="firePreviewLabel">Your FIRE Number (Today)</span>
                 <span class="fire-preview-value" id="firePreviewValue">PKR 0</span>
                 <span class="fire-preview-sub" id="firePreviewSub">= Monthly Expenses × 12 × 25</span>
             </div>
@@ -1160,7 +1530,7 @@
 <div class="sip-modal-overlay" id="sipModal" onclick="closeSipModalOutside(event)">
     <div class="sip-modal-box">
         <div class="sip-modal-header">
-            <h2>📋 SIP Year by Year</h2>
+            <h2>✏️ Your Custom SIP Plan</h2>
             <button class="sip-modal-close" onclick="closeSipModal()">✕</button>
         </div>
 
@@ -1204,10 +1574,16 @@
     const inflationRate = 0.10;
 
     // SIP schedule: array of {year, monthly, yearly}
-    let sipSchedule       = [];
-    let sipCustom         = [];   // tracks unsaved edits
-    let hasCustomSipSchedule = false;  // true if user has saved custom edits
-    let calendarStart     = new Date().getFullYear();
+    let sipSchedule          = [];
+    let sipCustom            = [];   // tracks unsaved edits
+    let hasCustomSipSchedule = false;
+    let calendarStart        = new Date().getFullYear();
+
+    // Stored after calculateWealth — used by FIRE simulation
+    let lastSipContribStop = Infinity;  // year after which SIP contributions = 0
+    let lastSipRate        = 0;
+    let lastSip            = 0;
+    let lastSipChange      = 0;
 
     /* ─── HELPERS ─── */
     function parseFormattedNumber(str) {
@@ -1225,10 +1601,23 @@
         try { input.setSelectionRange(cursorPos + diff, cursorPos + diff); } catch(e){}
     }
 
+    function toSuperscript(n) {
+        const map = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','-':'⁻'};
+        return String(n).split('').map(c => map[c] || c).join('');
+    }
+
     function formatCurrency(value) {
+        if (!isFinite(value) || isNaN(value)) return 'PKR —';
         const v = Math.round(value);
-        if (v >= 10_000_000) return `PKR ${(v / 10_000_000).toFixed(2)} Cr`;
-        if (v >= 100_000)    return `PKR ${(v / 100_000).toFixed(2)} L`;
+        const abs = Math.abs(v);
+        // Scientific notation for absurdly large numbers (> 99,999 Cr = 999 billion)
+        if (abs >= 100_000 * 10_000_000) {
+            const exp = Math.floor(Math.log10(abs));
+            const coeff = (abs / Math.pow(10, exp)).toFixed(2);
+            return `PKR ${coeff}×10${toSuperscript(exp)}`;
+        }
+        if (abs >= 10_000_000) return `PKR ${(v / 10_000_000).toFixed(2)} Cr`;
+        if (abs >= 100_000)    return `PKR ${(v / 100_000).toFixed(2)} L`;
         return `PKR ${v.toLocaleString('en-US')}`;
     }
 
@@ -1253,11 +1642,21 @@
         const mul     = incomeFrequency === 'monthly' ? 1/12 : 1;
         const infl    = document.getElementById('inflationAdjusted').checked;
         const deflate = infl ? Math.pow(1 + getInflationRate(), -lastYears) : 1;
+        const w       = wealth * deflate;
 
-        document.getElementById('fdIncome').textContent       = formatCurrency(wealth * 0.07 * mul * deflate);
-        document.getElementById('dividendIncome').textContent = formatCurrency(wealth * 0.10 * mul * deflate);
-        document.getElementById('rentalIncome').textContent   = formatCurrency(wealth * 0.06 * mul * deflate);
-        document.getElementById('goldIncome').textContent     = formatCurrency(wealth * 0.09 * mul * deflate);
+        // User's own projected return rate
+        const userRate = (parseFloat(document.getElementById('returnRate').value) || 12) / 100;
+        const rateEl   = document.getElementById('yourReturnPct');
+        const labelEl  = document.getElementById('yourReturnLabel');
+        const pct      = Math.round(userRate * 100);
+        if (rateEl)   rateEl.textContent   = pct;
+        if (labelEl)  labelEl.textContent  = pct + '%';
+
+        document.getElementById('yourReturnIncome').textContent = formatCurrency(w * userRate * mul);
+        document.getElementById('fdIncome').textContent         = formatCurrency(w * 0.08 * mul);
+        document.getElementById('dividendIncome').textContent   = formatCurrency(w * 0.07 * mul);
+        document.getElementById('rentalIncome').textContent     = formatCurrency(w * 0.06 * mul);
+        document.getElementById('goldIncome').textContent       = formatCurrency(w * 0.09 * mul);
         updateCustomIncome();
     }
 
@@ -1270,10 +1669,13 @@
     function updateCustomIncome() {
         if (!document.getElementById('enableCustomRoi').checked) return;
         const roi     = parseFloat(document.getElementById('customRoi').value) / 100 || 0;
+        const pct     = parseFloat(document.getElementById('customRoi').value) || 8;
         const mul     = incomeFrequency === 'monthly' ? 1/12 : 1;
         const infl    = document.getElementById('inflationAdjusted').checked;
         const deflate = infl ? Math.pow(1 + getInflationRate(), -lastYears) : 1;
         document.getElementById('customIncome').textContent = formatCurrency(lastWealth * roi * mul * deflate);
+        const lbl = document.getElementById('customRoiLabel');
+        if (lbl) lbl.textContent = pct;
     }
 
     /* ─── INFLATION TOGGLE ─── */
@@ -1309,6 +1711,14 @@
         document.getElementById('totalWealthBreakdown').textContent = formatCurrency(w);
         updateIncomeDisplay(lastWealth);
         updateYearsLabel();
+
+        // Rebuild chart with (possibly) inflation-adjusted data
+        const cal    = document.getElementById('useCalendarYears').checked;
+        const labels = cal ? lastLabels.map(y => `'${String(getCalendarYear(y)).slice(-2)}`) : lastLabels;
+        const chartW = infl ? deflateArray(lastWealthData, rate) : lastWealthData;
+        const chartC = infl ? deflateArray(lastContribData, rate) : lastContribData;
+        const chartF = (infl && lastFireLine) ? deflateArray(lastFireLine, rate) : lastFireLine;
+        buildChart(labels, chartW, chartC, chartF);
     }
 
     function getCalendarYear(y) { return calendarStart + y - 1; }
@@ -1327,7 +1737,12 @@
         const labels = cal
             ? lastLabels.map(y => `'${String(getCalendarYear(y)).slice(-2)}`)
             : lastLabels;
-        buildChart(labels, lastWealthData, lastContribData, lastFireLine);
+        const infl  = document.getElementById('inflationAdjusted').checked;
+        const iRate = getInflationRate();
+        const wData = infl ? deflateArray(lastWealthData, iRate) : lastWealthData;
+        const cData = infl ? deflateArray(lastContribData, iRate) : lastContribData;
+        const fData = (infl && lastFireLine) ? deflateArray(lastFireLine, iRate) : lastFireLine;
+        buildChart(labels, wData, cData, fData);
         // Also sync modal toggle
         const mCalCheck = document.getElementById('modalCalYears');
         if (mCalCheck) mCalCheck.checked = cal;
@@ -1336,7 +1751,7 @@
     /* ─── CLEAR ALL ─── */
     function clearAll() {
         const ids = ['initialInvestment','sip','returnRate','sipYearlyChange','sipStopYear','years',
-                     'monthlyExpenses','expenseIncrease','fireMultiplier'];
+                     'monthlyExpenses','expenseIncrease','fireMultiplier','sipContribStopYear','sipContribStopAmount'];
         ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
         // Reset fireMultiplier default
         document.getElementById('fireMultiplier').value = '25';
@@ -1346,6 +1761,7 @@
         document.getElementById('inflationToggleSection').style.display = 'none';
         document.getElementById('sipBreakdownBtn').style.display     = 'none';
         document.getElementById('calendarToggleSection').style.display = 'none';
+        document.getElementById('zakatToggleSection').style.display = 'none';
         document.getElementById('fireResult').classList.add('hidden');
         document.getElementById('inflationAdjusted').checked = false;
         document.getElementById('inflationRateRow').style.display = 'none';
@@ -1353,6 +1769,7 @@
         document.getElementById('customSipBadge').style.display = 'none';
         lastWealth = 0; lastYears = 0; lastTotalContrib = 0;
         lastLabels = []; lastWealthData = []; lastContribData = []; lastFireLine = null;
+        lastSipContribStop = Infinity; lastSipRate = 0; lastSip = 0; lastSipChange = 0;
         sipSchedule = []; sipCustom = []; hasCustomSipSchedule = false;
         if (chart) { chart.destroy(); chart = null; }
     }
@@ -1365,13 +1782,68 @@
         const scRaw        = document.getElementById('sipYearlyChange').value;
         const sipChange    = scRaw === '' ? 0 : parseFloat(scRaw) / 100;
         const stopYrRaw    = document.getElementById('sipStopYear').value;
-        const sipStopYear  = stopYrRaw !== '' ? parseInt(stopYrRaw) : Infinity;
-        const years        = parseInt(document.getElementById('years').value);
+        let sipStopYear    = stopYrRaw !== '' ? parseInt(stopYrRaw) : Infinity;
+        // If stop mode is "amount", compute equivalent stop year for *increasing*
+        if (sipStopMode === 'amount') {
+            const stopAmt = parseFormattedNumber(document.getElementById('sipStopAmount').value);
+            if (stopAmt > 0 && sip > 0 && sipChange > 0) {
+                let tmpSip = sip, tmpY = 1;
+                while (tmpSip < stopAmt && tmpY < 1000) { tmpSip *= (1 + sipChange); tmpY++; }
+                sipStopYear = tmpY;
+            }
+        }
+        // Resolve the SIP contribution stop year (stops contributing entirely)
+        const sipContribStop = getSipContribStopYear(sip, sipChange);
+        const years          = parseInt(document.getElementById('years').value);
 
-        if (!rate || !years) {
-            alert('Please enter at least an Annual Return % and Investment Period.');
+        const missing = [];
+        if (!rate) missing.push('returnRate');
+        if (!years) missing.push('years');
+
+        // Validate stop-increasing-SIP year
+        if (sipStopMode === 'year') {
+            const stopIncRaw = document.getElementById('sipStopYear').value;
+            if (stopIncRaw !== '') {
+                const stopIncVal = parseInt(stopIncRaw);
+                if (isNaN(stopIncVal) || stopIncVal < 1 || stopIncVal > years) {
+                    highlightMissing(['sipStopYear']);
+                    showToast(`Stop increasing SIP year must be between 1 and your investment period (${years} years)`);
+                    return;
+                }
+            }
+        }
+
+        // Validate SIP contribution stop year — must not exceed investment period
+        if (sipContribStopMode === 'year') {
+            const contribStopRaw = document.getElementById('sipContribStopYear').value;
+            if (contribStopRaw !== '') {
+                const contribStopVal = parseInt(contribStopRaw);
+                if (isNaN(contribStopVal) || contribStopVal < 1 || contribStopVal > years) {
+                    highlightMissing(['sipContribStopYear']);
+                    showToast(`SIP stop year must be between 1 and your investment period (${years} years)`);
+                    return;
+                }
+                // Must not be less than stop-increasing year
+                if (sipStopMode === 'year') {
+                    const stopIncRaw = document.getElementById('sipStopYear').value;
+                    if (stopIncRaw !== '') {
+                        const stopIncVal = parseInt(stopIncRaw);
+                        if (!isNaN(stopIncVal) && contribStopVal < stopIncVal) {
+                            highlightMissing(['sipContribStopYear']);
+                            showToast(`Stop contributions year can't be less than stop increasing year (${stopIncVal})`);
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (missing.length) {
+            highlightMissing(missing);
+            showToast('Please fill in the highlighted fields to continue');
             return;
         }
+        clearHighlights();
 
         document.getElementById('loader').style.display              = 'block';
         document.getElementById('resultsSection').style.display      = 'none';
@@ -1406,12 +1878,19 @@
                 hasCustomSipSchedule = false;
                 let curSip = sip;
                 for (let y = 1; y <= years; y++) {
-                    const monthlySip = Math.round(curSip);
+                    // After sipContribStop, monthly contribution is 0
+                    const monthlySip = y <= sipContribStop ? Math.round(curSip) : 0;
                     sipSchedule.push({ year: y, monthly: monthlySip, yearly: monthlySip * 12 });
                     sipCustom.push(null);
-                    if (y < sipStopYear) curSip *= (1 + sipChange);
+                    if (y < sipStopYear && y < sipContribStop) curSip *= (1 + sipChange);
                 }
             }
+
+            // Store sipContribStop for use in FIRE simulation
+            lastSipContribStop = sipContribStop;
+            lastSipRate        = rate;
+            lastSip            = sip;
+            lastSipChange      = sipChange;
 
             // Now loop and use sipSchedule (which may contain saved custom edits)
             for (let y = 1; y <= years; y++) {
@@ -1422,6 +1901,10 @@
                     w = w * (1 + mRate) + monthlySip;
                     totalC += monthlySip;
                 }
+
+                // Deduct Zakat (2.5%) at end of each year if enabled
+                if (zakatEnabled) w = w * (1 - 0.025);
+
                 rawLabels.push(y);
                 wData.push(Math.round(w));
                 cData.push(Math.round(totalC));
@@ -1462,15 +1945,32 @@
             document.getElementById('inflationToggleSection').style.display = 'block';
             document.getElementById('sipBreakdownBtn').style.display       = 'block';
             document.getElementById('calendarToggleSection').style.display = 'block';
+            document.getElementById('zakatToggleSection').style.display     = 'block';
 
             // Use calendar labels if toggle is on
-            const cal    = document.getElementById('useCalendarYears').checked;
-            const labels = cal ? rawLabels.map(y => `'${String(getCalendarYear(y)).slice(-2)}`) : rawLabels;
-            buildChart(labels, wData, cData, null);
+            const cal       = document.getElementById('useCalendarYears').checked;
+            const labels    = cal ? rawLabels.map(y => `'${String(getCalendarYear(y)).slice(-2)}`) : rawLabels;
+            const inflOn    = document.getElementById('inflationAdjusted').checked;
+            const iRateNow  = getInflationRate();
+            const chartW    = inflOn ? deflateArray(wData, iRateNow) : wData;
+            const chartC    = inflOn ? deflateArray(cData, iRateNow) : cData;
+            buildChart(labels, chartW, chartC, null);
+
+            // If FIRE was already calculated, prompt user to re-run
+            const fireResultEl = document.getElementById('fireResult');
+            if (fireResultEl && !fireResultEl.classList.contains('hidden')) {
+                fireResultEl.classList.add('hidden');
+                setTimeout(() => showFireRerunPrompt(), 300);
+            }
         }, 2000);
     }
 
     /* ─── CHART ─── */
+    // Deflate a data array by compound inflation: deflatedData[i] = data[i] / (1+rate)^(i+1)
+    function deflateArray(arr, rate) {
+        return arr.map((v, i) => Math.round(v / Math.pow(1 + rate, i + 1)));
+    }
+
     function buildChart(labels, wealthData, contribData, fireLineData) {
         lastFireLine = fireLineData;
         const ctx = document.getElementById('wealthChart').getContext('2d');
@@ -1618,72 +2118,148 @@
         preview.classList.remove('hidden');
     }
 
+    /* ─── FIRE RE-RUN PROMPT ─── */
+    let fireRerunPending = false;
+    function showFireRerunPrompt() {
+        if (!document.getElementById('enableFire').checked) return;
+        fireRerunPending = true;
+        document.getElementById('fireRerunPrompt').style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+    function closeFireRerunPrompt(rerun) {
+        document.getElementById('fireRerunPrompt').style.display = 'none';
+        document.body.style.overflow = '';
+        fireRerunPending = false;
+        if (rerun) calculateFire();
+    }
+
     /* ─── FIRE CALCULATION ─── */
     function calculateFire() {
         const expenses    = parseFormattedNumber(document.getElementById('monthlyExpenses').value);
         const expIncrease = getExpenseIncrease();
         const multiplier  = getMultiplier();
-        const initial     = parseFormattedNumber(document.getElementById('initialInvestment').value);
-        const sip         = parseFormattedNumber(document.getElementById('sip').value);
-        const rate        = parseFloat(document.getElementById('returnRate').value) / 100;
-        const scRaw       = document.getElementById('sipYearlyChange').value;
-        const sipChange   = scRaw === '' ? 0 : parseFloat(scRaw) / 100;
         const investYears = parseInt(document.getElementById('years').value) || 0;
 
-        if (!expenses || !rate) {
-            alert('Please fill in Monthly Expenses and Annual Return % to calculate FIRE.');
+        const fireMissing = [];
+        if (!expenses) fireMissing.push('monthlyExpenses');
+        if (!investYears) fireMissing.push('years');
+        if (!lastWealthData.length) {
+            showToast('Please calculate your wealth projection first');
             return;
         }
-        if (!investYears) {
-            alert('Please fill in your Investment Period (Years) above to calculate FIRE.');
+        if (fireMissing.length) {
+            highlightMissing(fireMissing);
+            showToast('Please fill in the highlighted fields to continue');
             return;
         }
+        clearHighlights();
 
+        const infl  = document.getElementById('inflationAdjusted').checked;
+        const iRate = getInflationRate();
+        const rate  = parseFloat(document.getElementById('returnRate').value) / 100;
         const mRate = rate / 12;
-        let w = initial, curSip = sip;
-        let fireYear = null, fireWealth = 0, fireTargetAtYear = 0;
 
-        // Build FIRE target line (rising with inflation) clipped to investYears for chart
-        const fireLineData = [];
+        // ── Warning: if inflation >= return rate, wealth may never outpace FIRE target
+        const effectiveCost = expIncrease + (zakatEnabled ? 0.025 : 0);
+        const el = document.getElementById('fireResult');
+        el.classList.remove('hidden');
+        el.style.borderColor = '#ff5f5f';
 
-        const maxLoop = Math.max(investYears, 100);
-        for (let y = 1; y <= maxLoop; y++) {
-            for (let m = 0; m < 12; m++) {
-                w = w * (1 + mRate) + curSip;
-            }
-            curSip *= (1 + sipChange);
+        if (rate <= expIncrease) {
+            el.innerHTML = `
+                <div style="text-align:center;padding:8px 0 4px;">
+                    <div style="font-size:32px;margin-bottom:12px;">⚠️</div>
+                    <h3 style="color:#ff5f5f;font-size:18px;font-weight:800;margin-bottom:12px;">Inflation Exceeds Your Return Rate</h3>
+                    <p style="color:#888;font-size:14px;line-height:1.8;margin-bottom:20px;">
+                        Your expense inflation rate (<strong style="color:#ff8c8c">${(expIncrease*100).toFixed(1)}%</strong>) is 
+                        equal to or higher than your expected annual return (<strong style="color:#ff8c8c">${(rate*100).toFixed(1)}%</strong>).
+                        <br><br>
+                        This means your FIRE target grows as fast (or faster) than your wealth — you may <strong style="color:#ff8c8c">never reach FIRE</strong> with these numbers.
+                        <br><br>
+                        Please either increase your <strong style="color:#bef202">Expected Annual Return</strong> above the expense inflation rate, 
+                        or reduce the <strong style="color:#bef202">Yearly Expense Increase</strong> in the FIRE section below your return rate.
+                    </p>
+                    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+                        <div style="background:#111;border:1px solid #2a2a2a;border-radius:12px;padding:14px 20px;text-align:center;">
+                            <div style="font-size:11px;color:#555;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Your Return</div>
+                            <div style="font-size:22px;font-weight:900;color:#ff5f5f;">${(rate*100).toFixed(1)}%</div>
+                        </div>
+                        <div style="display:flex;align-items:center;font-size:20px;color:#555;">≤</div>
+                        <div style="background:#111;border:1px solid #2a2a2a;border-radius:12px;padding:14px 20px;text-align:center;">
+                            <div style="font-size:11px;color:#555;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Expense Inflation</div>
+                            <div style="font-size:22px;font-weight:900;color:#ff5f5f;">${(expIncrease*100).toFixed(1)}%</div>
+                        </div>
+                    </div>
+                </div>`;
+            return;
+        }
 
+        if (zakatEnabled && rate <= effectiveCost) {
+            el.innerHTML = `
+                <div style="text-align:center;padding:8px 0 4px;">
+                    <div style="font-size:32px;margin-bottom:12px;">⚠️</div>
+                    <h3 style="color:#ff5f5f;font-size:18px;font-weight:800;margin-bottom:12px;">Return Too Low with Zakat + Inflation</h3>
+                    <p style="color:#888;font-size:14px;line-height:1.8;margin-bottom:20px;">
+                        With Zakat deductions (2.5%) and expense inflation (${(expIncrease*100).toFixed(1)}%), 
+                        your total annual cost is <strong style="color:#ff8c8c">${(effectiveCost*100).toFixed(1)}%</strong> — 
+                        which equals or exceeds your return of <strong style="color:#ff8c8c">${(rate*100).toFixed(1)}%</strong>.
+                        <br><br>
+                        Your wealth may not grow fast enough to ever reach the FIRE target.
+                        <br><br>
+                        Try increasing your <strong style="color:#bef202">Expected Annual Return</strong> above ${(effectiveCost*100).toFixed(1)}%, 
+                        or reducing the <strong style="color:#bef202">Yearly Expense Increase</strong> below ${((rate - 0.025)*100).toFixed(1)}%.
+                    </p>
+                    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+                        <div style="background:#111;border:1px solid #2a2a2a;border-radius:12px;padding:14px 20px;text-align:center;">
+                            <div style="font-size:11px;color:#555;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Your Return</div>
+                            <div style="font-size:22px;font-weight:900;color:#ff5f5f;">${(rate*100).toFixed(1)}%</div>
+                        </div>
+                        <div style="display:flex;align-items:center;font-size:20px;color:#555;">≤</div>
+                        <div style="background:#111;border:1px solid #2a2a2a;border-radius:12px;padding:14px 20px;text-align:center;">
+                            <div style="font-size:11px;color:#555;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Inflation + Zakat</div>
+                            <div style="font-size:22px;font-weight:900;color:#ff5f5f;">${(effectiveCost*100).toFixed(1)}%</div>
+                        </div>
+                    </div>
+                </div>`;
+            return;
+        }
+
+        // ── Step 1: Compare wealth vs FIRE target year-by-year within investment period
+        let fireYear         = null;
+        let fireWealth       = 0;
+        let fireTargetAtYear = 0;
+        const fireLineData   = [];
+
+        for (let y = 1; y <= investYears; y++) {
             const target = fireTarget(expenses, expIncrease, multiplier, y);
+            const wealth = lastWealthData[y - 1];
+            fireLineData.push(Math.round(target));
 
-            if (y <= investYears) {
-                fireLineData.push(Math.round(target));
-            }
-
-            if (!fireYear && w >= target) {
-                fireYear          = y;
-                fireWealth        = w;
-                fireTargetAtYear  = target;
+            if (fireYear === null && wealth >= target) {
+                fireYear         = y;
+                fireWealth       = wealth;
+                fireTargetAtYear = target;
             }
         }
 
         // Rebuild chart with rising FIRE target line (respect calendar toggle)
         const cal    = document.getElementById('useCalendarYears').checked;
         const labels = cal ? lastLabels.map(y => `'${String(getCalendarYear(y)).slice(-2)}`) : lastLabels;
-        buildChart(labels, lastWealthData, lastContribData, fireLineData);
+        const chartW = infl ? deflateArray(lastWealthData, iRate) : lastWealthData;
+        const chartC = infl ? deflateArray(lastContribData, iRate) : lastContribData;
+        // FIRE target line always shown as nominal (inflation-growing) numbers so the crossing point is visible
+        buildChart(labels, chartW, chartC, fireLineData);
 
-        const el = document.getElementById('fireResult');
-        el.classList.remove('hidden');
-
-        const reachedInTime = fireYear !== null && fireYear <= investYears;
-        // Today's FIRE number (for display, before inflation)
-        const todayFireNum = expenses * 12 * multiplier;
-
-        // Wealth at end of investment period (last value from simulation)
-        const projectedWealth   = lastWealthData[investYears - 1] || w;
-        // FIRE target at end of investment period (what the bar will be at year N)
+        const todayFireNum       = expenses * 12 * multiplier;
+        const projectedWealth    = lastWealthData[investYears - 1];
         const inflatedFireTarget = fireTarget(expenses, expIncrease, multiplier, investYears);
 
-        if (reachedInTime) {
+        if (fireYear !== null) {
+            // FIRE reached within investment period
+            const deflate       = infl ? Math.pow(1 + iRate, -fireYear) : 1;
+            const displayWealth = fireWealth * deflate;
+            const displayTarget = fireTargetAtYear * deflate;
+            const displayToday  = infl ? todayFireNum * Math.pow(1 + iRate, 0) : todayFireNum; // today's number never deflated
             el.style.borderColor = '#bef202';
             el.innerHTML = `
                 <h3>🔥 You can FIRE in</h3>
@@ -1692,14 +2268,79 @@
                     FIRE multiplier used: <strong style="color:#bef202">${multiplier}×</strong>
                     <span style="font-size:12px;color:#666;">(${multiplier === 25 ? 'global standard' : 'custom'})</span><br>
                     Your FIRE Number today: <strong style="color:#bef202">${formatCurrency(todayFireNum)}</strong><br>
-                    FIRE target at Year ${fireYear} (inflation-adjusted): <strong style="color:#bef202">${formatCurrency(fireTargetAtYear)}</strong><br>
-                    Your projected wealth at that point: <strong style="color:#bef202">${formatCurrency(fireWealth)}</strong><br>
+                    FIRE target at Year ${fireYear}${infl ? ' <span style="font-size:12px;color:#666;">(in today\'s purchasing power)</span>' : ' (inflation-adjusted)'}: <strong style="color:#bef202">${formatCurrency(infl ? displayTarget : fireTargetAtYear)}</strong><br>
+                    Your projected wealth at that point${infl ? ' <span style="font-size:12px;color:#666;">(in today\'s purchasing power)</span>' : ''}: <strong style="color:#bef202">${formatCurrency(infl ? displayWealth : fireWealth)}</strong><br>
                     Your wealth <strong style="color:#bef202">covers ${multiplier} years of inflation-adjusted annual expenses</strong> — you're financially free.
                 </p>`;
         } else {
-            el.style.borderColor = '#ff5f5f';
-            const sugg = computeSuggestions(initial, sip, sipChange, rate, expenses, expIncrease, multiplier, investYears);
-            el.innerHTML = buildNotReachedHTML(sugg, fireYear, investYears, todayFireNum, multiplier, projectedWealth, inflatedFireTarget);
+            // ── FIRE not reached within investment period.
+            // Extension simulation: continue year by year beyond the investment period.
+            //
+            // Rule: if SIP was still running at the END of the investment period
+            // (i.e. lastSipContribStop > investYears), continue contributing the final
+            // SIP amount each month while simulating. If SIP had already stopped
+            // before the end of the investment period, wealth grows on returns only.
+            //
+            // Zakat (if enabled) is deducted annually in both cases.
+
+            const sipStillRunning = lastSipContribStop > investYears;
+
+            // Read the "stop increasing SIP" year — Infinity if blank
+            const scRaw2        = document.getElementById('sipYearlyChange').value;
+            const sipChangeExt  = scRaw2 === '' ? 0 : parseFloat(scRaw2) / 100;
+            const stopYrRaw2    = document.getElementById('sipStopYear').value;
+            let sipStopYearExt  = stopYrRaw2 !== '' ? parseInt(stopYrRaw2) : Infinity;
+            if (sipStopMode === 'amount') {
+                const stopAmt2 = parseFormattedNumber(document.getElementById('sipStopAmount').value);
+                if (stopAmt2 > 0 && lastSip > 0 && sipChangeExt > 0) {
+                    let tmp = lastSip, ty = 1;
+                    while (tmp < stopAmt2 && ty < 1000) { tmp *= (1 + sipChangeExt); ty++; }
+                    sipStopYearExt = ty;
+                }
+            }
+
+            // Starting SIP for the extension: the SIP at the last year of the investment period
+            // (already accounts for step-ups and the sipContribStop logic)
+            let extCurSip = sipStillRunning
+                ? (sipSchedule.length > 0 ? sipSchedule[investYears - 1].monthly : 0)
+                : 0;
+
+            let extFireYear   = null;
+            let extFireTarget = 0;
+            let extFireWealth = 0;
+            let w = lastWealth;
+            for (let y = investYears + 1; y <= 100; y++) {
+                // Step up SIP for this year if still running and increase not yet frozen
+                if (sipStillRunning && y - 1 < sipStopYearExt) {
+                    extCurSip = Math.round(extCurSip * (1 + sipChangeExt));
+                }
+                const monthlySipThisYear = sipStillRunning ? extCurSip : 0;
+                for (let m = 0; m < 12; m++) {
+                    w = w * (1 + mRate) + monthlySipThisYear;
+                }
+                if (zakatEnabled) w = w * (1 - 0.025);
+                const target = fireTarget(expenses, expIncrease, multiplier, y);
+                if (w >= target) {
+                    extFireYear   = y;
+                    extFireTarget = target;
+                    extFireWealth = w;
+                    break;
+                }
+            }
+
+            // For suggestion cards — compute what's needed to FIRE at the end of the ORIGINAL investment period
+            const initial   = parseFormattedNumber(document.getElementById('initialInvestment').value);
+            const sip       = parseFormattedNumber(document.getElementById('sip').value);
+            const scRaw     = document.getElementById('sipYearlyChange').value;
+            const sipChange = scRaw === '' ? 0 : parseFloat(scRaw) / 100;
+            const sugg      = computeSuggestions(initial, sip, sipChange, rate, expenses, expIncrease, multiplier, investYears);
+
+            el.innerHTML = buildNotReachedHTML(
+                sugg, extFireYear, extFireWealth, investYears,
+                todayFireNum, multiplier,
+                projectedWealth, inflatedFireTarget,
+                extFireTarget, infl, iRate, sipStillRunning
+            );
             initCarousel();
         }
     }
@@ -1752,45 +2393,75 @@
         return { minInit, minSip, minSipInc, maxMonthlyExp };
     }
 
-    function buildNotReachedHTML(s, fireYear, investYears, todayFireNum, multiplier, projectedWealth, inflatedFireTarget) {
-        const shortfall = inflatedFireTarget - projectedWealth;
-        const gapMsg = fireYear
-            ? `FIRE is reachable in <strong style="color:#ff8c8c">${fireYear} years</strong> — that's <strong style="color:#ff8c8c">${fireYear - investYears} year${fireYear - investYears !== 1 ? 's' : ''} beyond</strong> your ${investYears}-year investment period.`
-            : `FIRE cannot be reached within 100 years with your current strategy.`;
+    function buildNotReachedHTML(s, fireYear, extFireWealth, investYears, todayFireNum, multiplier, projectedWealth, inflatedFireTarget, fireTargetAtActualYear, infl, iRate, sipStillRunning) {
+        const extra = fireYear ? fireYear - investYears : null;
 
+        // Apply inflation adjustment to display values when toggle is on
+        const deflExt   = (infl && fireYear) ? Math.pow(1 + iRate, -fireYear)   : 1;
+        const deflInvest= infl ? Math.pow(1 + iRate, -investYears) : 1;
+
+        // Display numbers — nominal unless inflation toggle is on
+        const displayProjWealth      = projectedWealth * deflInvest;
+        const displayInflatedTarget  = inflatedFireTarget * deflInvest;
+        const displayExtWealth       = extFireWealth * deflExt;
+        const displayExtTarget       = fireTargetAtActualYear * deflExt;
+        const shortfall              = displayInflatedTarget - displayProjWealth;
+
+        const inflNote = infl ? ' <span style="font-size:11px;color:#666;">(today\'s value)</span>' : '';
+        const inflNoteTarget = infl ? ' <span style="font-size:11px;color:#666;">(inflation-adjusted)</span>' : '';
+
+        // Gap message depends on whether SIP is still running at end of investment period
+        let gapMsg;
+        if (!fireYear) {
+            gapMsg = `FIRE cannot be reached within 100 years with your current strategy.`;
+        } else if (sipStillRunning) {
+            // SIP was still active at end of period — extension continues SIP contributions
+            const sipIncRaw = document.getElementById('sipYearlyChange').value;
+            const sipStopRaw = document.getElementById('sipStopYear').value;
+            const hasSipIncreaseLimit = sipIncRaw !== '' && parseFloat(sipIncRaw) > 0 && sipStopRaw !== '';
+            if (hasSipIncreaseLimit) {
+                gapMsg = `With your current strategy, continue investing for <strong style="color:#ff8c8c">${extra} more year${extra !== 1 ? 's' : ''}</strong> beyond your plan (${fireYear} years total) — keeping the same SIP — to reach the FIRE target of <strong style="color:#ff8c8c">${formatCurrency(displayExtTarget)}</strong>${infl ? ' (in today\'s value)' : ' (inflation-adjusted)'}.`;
+            } else {
+                gapMsg = `With your current strategy, continue investing for <strong style="color:#ff8c8c">${extra} more year${extra !== 1 ? 's' : ''}</strong> beyond your plan (${fireYear} years total) to reach the FIRE target of <strong style="color:#ff8c8c">${formatCurrency(displayExtTarget)}</strong>${infl ? ' (in today\'s value)' : ' (inflation-adjusted)'}.`;
+            }
+        } else {
+            // SIP stopped before end of period — extension is wealth growing on its own
+            gapMsg = `After your <strong style="color:#ff8c8c">${investYears}-year</strong> investment period, let your wealth grow on its own for <strong style="color:#ff8c8c">${extra} more year${extra !== 1 ? 's' : ''}</strong> (total ${fireYear} years) to reach the FIRE target of <strong style="color:#ff8c8c">${formatCurrency(displayExtTarget)}</strong>${infl ? ' (in today\'s value)' : ' (inflation-adjusted)'}.`;
+        }
+
+        // Suggestion values — these are raw lump-sum / SIP numbers (no deflation needed since they are today's inputs)
         return `
         <div class="fire-not-reached-header">
             <h3>⚠️ FIRE Not Reached in ${investYears} Years</h3>
+            <p style="margin-top:12px;font-size:14px;color:#888;">${gapMsg}</p>
+        </div>
 
-            <!-- 3-stat row -->
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:18px 0 20px;text-align:left;">
-                <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:14px 12px;">
-                    <div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;">FIRE Number Today</div>
-                    <div style="font-size:15px;font-weight:800;color:#fff;">${formatCurrency(todayFireNum)}</div>
-                    <div style="font-size:10px;color:#444;margin-top:4px;">${multiplier}× annual expenses</div>
+        <div class="fire-stat-stack">
+            <div class="fire-stat-row-card">
+                <div class="fsr-left">
+                    <div class="fsr-label">Your FIRE Number Today</div>
+                    <div class="fsr-sub">${multiplier}× annual expenses (no inflation)</div>
                 </div>
-                <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:14px 12px;">
-                    <div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;">FIRE Target in Yr ${investYears}</div>
-                    <div style="font-size:15px;font-weight:800;color:#ff8c8c;">${formatCurrency(inflatedFireTarget)}</div>
-                    <div style="font-size:10px;color:#444;margin-top:4px;">inflation-adjusted</div>
+                <div class="fsr-value">${formatCurrency(todayFireNum)}</div>
+            </div>
+            <div class="fire-stat-row-card fsr-danger">
+                <div class="fsr-left">
+                    <div class="fsr-label">FIRE Target at Year ${investYears}${inflNote}</div>
+                    <div class="fsr-sub">What you'll need after ${investYears} years of expense inflation</div>
                 </div>
-                <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:14px 12px;">
-                    <div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;">Your Projected Wealth</div>
-                    <div style="font-size:15px;font-weight:800;color:#fff;">${formatCurrency(projectedWealth)}</div>
-                    <div style="font-size:10px;color:#ff6b6b;margin-top:4px;">short by ${formatCurrency(shortfall)}</div>
+                <div class="fsr-value" style="color:#ff8c8c;">${formatCurrency(displayInflatedTarget)}</div>
+            </div>
+            <div class="fire-stat-row-card">
+                <div class="fsr-left">
+                    <div class="fsr-label">Your Projected Wealth at Year ${investYears}${inflNote}</div>
+                    <div class="fsr-sub" style="color:#ff6b6b;">Short by ${formatCurrency(Math.max(0, shortfall))}</div>
                 </div>
+                <div class="fsr-value">${formatCurrency(displayProjWealth)}</div>
             </div>
 
-            <p>
-                ${gapMsg}<br><br>
-                With your current strategy you cannot reach FIRE within your investment period.<br>
-                Swipe to see how you can get there. 👉
-            </p>
         </div>
 
-        <div class="swipe-hint">
-            <span class="swipe-arrow">←</span>&nbsp;Swipe to see how you can achieve FIRE&nbsp;<span class="swipe-arrow">→</span>
-        </div>
+        <p style="font-size:13px;color:#555;text-align:center;margin-bottom:20px;">Swipe through options below to reach FIRE within your original ${investYears} years 👇</p>
 
         <div class="suggestions-carousel" id="suggestionsCarousel">
 
@@ -1870,6 +2541,34 @@
     function closeSipModal() {
         document.getElementById('sipModal').classList.remove('open');
         document.body.style.overflow = '';
+        const hasUnsaved = sipCustom.some(x => x !== null);
+        const shouldPrompt = hasUnsaved || pendingSimulate;
+        pendingSimulate = false;
+        if (shouldPrompt) {
+            setTimeout(() => {
+                document.getElementById('simulatePrompt').style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }, 200);
+        }
+    }
+
+    function closeSimulatePrompt(simulate) {
+        document.getElementById('simulatePrompt').style.display = 'none';
+        document.body.style.overflow = '';
+        if (simulate) {
+            // If user closed without saving, there may still be unsaved edits in sipCustom
+            const hasUnsaved = sipCustom.some(x => x !== null);
+            if (hasUnsaved) {
+                sipSchedule = sipSchedule.map((row, i) =>
+                    sipCustom[i] ? { ...row, ...sipCustom[i] } : row
+                );
+                hasCustomSipSchedule = true;
+                sipCustom = sipCustom.map(() => null);
+            }
+            // sipSchedule already has saved values from saveSipEdits() if user saved
+            calculateWealth();
+        }
+        pendingSimulate = false;
     }
 
     function closeSipModalOutside(e) {
@@ -1941,34 +2640,60 @@
     // User edits Monthly → auto-calculate Yearly
     function onPopMonthlyInput(input) {
         const raw = input.value.replace(/\D/g, '');
-        const num = parseInt(raw) || 0;
-        input.value = num ? num.toLocaleString('en-US') : '';
-        document.getElementById('popMonthlyPreview').textContent = num ? compactSip(num) : '—';
-        // Mirror to yearly
+        // Allow empty string while typing; parse as 0 only when raw is non-empty
+        const num = raw === '' ? null : parseInt(raw);
+        if (num === null) {
+            input.value = '';
+            document.getElementById('popMonthlyPreview').textContent = '—';
+            document.getElementById('popYearlyInput').value = '';
+            document.getElementById('popYearlyPreview').textContent = '—';
+            return;
+        }
+        input.value = num > 0 ? num.toLocaleString('en-US') : '0';
+        document.getElementById('popMonthlyPreview').textContent = compactSip(num) || '0';
         const yearly = num * 12;
-        const yInput = document.getElementById('popYearlyInput');
-        yInput.value = num ? yearly.toLocaleString('en-US') : '';
-        document.getElementById('popYearlyPreview').textContent = num ? compactSip(yearly) : '—';
+        document.getElementById('popYearlyInput').value = yearly > 0 ? yearly.toLocaleString('en-US') : '0';
+        document.getElementById('popYearlyPreview').textContent = compactSip(yearly) || '0';
     }
 
     // User edits Yearly → auto-calculate Monthly
     function onPopYearlyInput(input) {
         const raw = input.value.replace(/\D/g, '');
-        const num = parseInt(raw) || 0;
-        input.value = num ? num.toLocaleString('en-US') : '';
-        document.getElementById('popYearlyPreview').textContent = num ? compactSip(num) : '—';
-        // Mirror to monthly
+        const num = raw === '' ? null : parseInt(raw);
+        if (num === null) {
+            input.value = '';
+            document.getElementById('popYearlyPreview').textContent = '—';
+            document.getElementById('popMonthlyInput').value = '';
+            document.getElementById('popMonthlyPreview').textContent = '—';
+            return;
+        }
+        input.value = num > 0 ? num.toLocaleString('en-US') : '0';
+        document.getElementById('popYearlyPreview').textContent = compactSip(num) || '0';
         const monthly = Math.round(num / 12);
-        const mInput  = document.getElementById('popMonthlyInput');
-        mInput.value  = num ? monthly.toLocaleString('en-US') : '';
-        document.getElementById('popMonthlyPreview').textContent = num ? compactSip(monthly) : '—';
+        document.getElementById('popMonthlyInput').value = monthly > 0 ? monthly.toLocaleString('en-US') : '0';
+        document.getElementById('popMonthlyPreview').textContent = compactSip(monthly) || '0';
     }
 
     function confirmSipEdit() {
         if (popEditIndex < 0) return;
-        const rawM   = document.getElementById('popMonthlyInput').value.replace(/\D/g, '');
-        const monthly = parseInt(rawM) || 0;
-        if (!monthly) { alert('Please enter a valid amount.'); return; }
+        const rawM  = document.getElementById('popMonthlyInput').value.replace(/\D/g, '');
+        if (rawM === '') { showToast('Please enter an amount (0 is allowed)'); return; }
+        const monthly = parseInt(rawM);
+
+        // If amount exceeds SIP stop limit, show confirmation modal instead of toast
+        if (sipStopMode === 'amount') {
+            const stopAmt = parseFormattedNumber(document.getElementById('sipStopAmount').value);
+            if (stopAmt > 0 && monthly > stopAmt) {
+                showSipLimitWarning(monthly, stopAmt);
+                return;
+            }
+        }
+
+        applySipEdit(monthly);
+    }
+
+    function applySipEdit(monthly) {
+        if (popEditIndex < 0) return;
         if (!sipCustom[popEditIndex]) sipCustom[popEditIndex] = { ...sipSchedule[popEditIndex] };
         sipCustom[popEditIndex].monthly = monthly;
         sipCustom[popEditIndex].yearly  = monthly * 12;
@@ -1976,14 +2701,35 @@
         renderSipTable();
     }
 
+    function showSipLimitWarning(monthly, stopAmt) {
+        document.getElementById('sipLimitWarnAmt').textContent    = formatCurrency(monthly);
+        document.getElementById('sipLimitWarnLimit').textContent  = formatCurrency(stopAmt);
+        document.getElementById('sipLimitWarnPending').value      = monthly;
+        document.getElementById('sipLimitWarning').style.display  = 'flex';
+    }
+
+    function closeSipLimitWarning(confirm) {
+        document.getElementById('sipLimitWarning').style.display = 'none';
+        if (confirm) {
+            const monthly = parseInt(document.getElementById('sipLimitWarnPending').value);
+            applySipEdit(monthly);
+        }
+        // If not confirmed, popup stays open so user can edit the value
+    }
+
+    let pendingSimulate = false;  // set true after save, triggers prompt on close
+
     function saveSipEdits() {
-        // Merge edits into sipSchedule permanently
+        // Merge unsaved edits into sipSchedule
+        const hadEdits = sipCustom.some(x => x !== null);
         sipSchedule = sipSchedule.map((row, i) =>
             sipCustom[i] ? { ...row, ...sipCustom[i] } : row
         );
-        // Mark that we have custom schedule
-        hasCustomSipSchedule = sipCustom.some(x => x !== null);
-        // Clear the unsaved edit tracking
+        // Mark as custom BEFORE wiping sipCustom (was the bug: checking after wipe)
+        if (hadEdits) {
+            hasCustomSipSchedule = true;
+            pendingSimulate = true;
+        }
         sipCustom = sipCustom.map(() => null);
         renderSipTable();
         const btn = document.querySelector('.sip-save-btn');
@@ -2010,11 +2756,302 @@
         renderSipTable();
     }
 
+
+
+    /* ─── TOAST ─── */
+    let toastTimer = null;
+    function showToast(msg) {
+        const bar = document.getElementById('toastBar');
+        bar.textContent = '⚠️  ' + msg;
+        bar.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => bar.classList.remove('show'), 3500);
+    }
+
+    /* ─── INPUT HIGHLIGHT ─── */
+    function highlightMissing(ids) {
+        ids.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.add('input-error');
+            el.addEventListener('input', () => el.classList.remove('input-error'), { once: true });
+        });
+    }
+
+    function clearHighlights() {
+        document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
+    }
+
+    /* ─── SIP STOP MODE ─── */
+    let sipStopMode = 'year';
+
+    function setSipStopMode(mode) {
+        sipStopMode = mode;
+        const yearBtn = document.getElementById('sipStopModeYear');
+        const amtBtn  = document.getElementById('sipStopModeAmt');
+        const yearField = document.getElementById('sipStopYearField');
+        const amtField  = document.getElementById('sipStopAmtField');
+        yearBtn.classList.toggle('active', mode === 'year');
+        amtBtn.classList.toggle('active',  mode === 'amount');
+        yearField.style.display = mode === 'year'   ? 'block' : 'none';
+        amtField.style.display  = mode === 'amount' ? 'block' : 'none';
+    }
+
+    // SIP stop mode initialized via HTML class attributes above
+
+    /* ─── SIP CONTRIBUTION STOP MODE ─── */
+    let sipContribStopMode = 'year';
+
+    function setSipContribStopMode(mode) {
+        sipContribStopMode = mode;
+        document.getElementById('sipContribStopModeYear').classList.toggle('active', mode === 'year');
+        document.getElementById('sipContribStopModeAmt').classList.toggle('active',  mode === 'amount');
+        document.getElementById('sipContribStopYearField').style.display = mode === 'year'   ? 'block' : 'none';
+        document.getElementById('sipContribStopAmtField').style.display  = mode === 'amount' ? 'block' : 'none';
+    }
+
+    function validateSipStopYear(input) {
+        const years = parseInt(document.getElementById('years').value) || 0;
+        const val   = parseInt(input.value);
+        if (!input.value) { input.classList.remove('input-error'); return; }
+        if (isNaN(val) || val < 1) {
+            input.classList.add('input-error');
+            showToast('Stop increasing SIP year must be at least 1');
+            return;
+        }
+        if (years > 0 && val > years) {
+            input.classList.add('input-error');
+            showToast(`Stop increasing SIP year cannot exceed your investment period (${years} years)`);
+            return;
+        }
+        input.classList.remove('input-error');
+        // Re-validate contrib stop if set, since its floor depends on this value
+        const contribInput = document.getElementById('sipContribStopYear');
+        if (contribInput && contribInput.value) validateSipContribStopYear(contribInput);
+    }
+
+    function validateSipContribStopYear(input) {
+        const years = parseInt(document.getElementById('years').value) || 0;
+        const val   = parseInt(input.value);
+        if (!input.value) { input.classList.remove('input-error'); return; }
+        if (isNaN(val) || val < 1) {
+            input.classList.add('input-error');
+            showToast('SIP stop year must be at least 1');
+            return;
+        }
+        if (years > 0 && val > years) {
+            input.classList.add('input-error');
+            showToast(`SIP stop year cannot exceed your investment period (${years} years)`);
+            return;
+        }
+        // Must not be less than the "stop increasing SIP" year
+        if (sipStopMode === 'year') {
+            const stopIncRaw = document.getElementById('sipStopYear').value;
+            if (stopIncRaw !== '') {
+                const stopInc = parseInt(stopIncRaw);
+                if (!isNaN(stopInc) && val < stopInc) {
+                    input.classList.add('input-error');
+                    showToast(`Stop contributions year (${val}) can't be less than stop increasing year (${stopInc})`);
+                    return;
+                }
+            }
+        }
+        input.classList.remove('input-error');
+    }
+
+    /* Resolve sipContribStopYear from inputs — returns Infinity if not set */
+    function getSipContribStopYear(sip, sipChange) {
+        if (sipContribStopMode === 'year') {
+            const raw = document.getElementById('sipContribStopYear').value;
+            return raw !== '' ? parseInt(raw) : Infinity;
+        } else {
+            const stopAmt = parseFormattedNumber(document.getElementById('sipContribStopAmount').value);
+            if (stopAmt > 0 && sip > 0) {
+                if (sipChange <= 0) return sip >= stopAmt ? 0 : Infinity;
+                let tmpSip = sip, tmpY = 0;
+                while (tmpSip < stopAmt && tmpY < 1000) { tmpSip *= (1 + sipChange); tmpY++; }
+                return tmpY;
+            }
+            return Infinity;
+        }
+    }
+
+
+    let zakatEnabled = false;
+
+    function onZakatToggle() {
+        zakatEnabled = document.getElementById('zakatDeduction').checked;
+        // recalculate with current inputs preserved
+        calculateWealth();
+    }
+
+    /* Zakat is applied inside the yearly loop — 2.5% off wealth at year-end */
+
+    /* ─── BREAKDOWN MODAL ─── */
+    function openBreakdownModal() {
+        if (!lastWealth) return;
+        const infl    = document.getElementById('inflationAdjusted').checked;
+        const rate    = getInflationRate();
+        const deflate = infl ? Math.pow(1 + rate, -lastYears) : 1;
+        const w       = lastWealth * deflate;
+        const tc      = lastTotalContrib * deflate;
+        const profit  = w - tc;
+        const contribPct = Math.max(2, Math.round((tc / w) * 100));
+        const profitPct  = Math.max(2, Math.round((profit / w) * 100));
+
+        document.getElementById('bkModalContrib').textContent = formatCurrency(tc);
+        document.getElementById('bkModalProfit').textContent  = formatCurrency(profit);
+        document.getElementById('bkModalWealth').textContent  = formatCurrency(w);
+        // Reset bars first
+        document.getElementById('bkContribBar').style.width = '0%';
+        document.getElementById('bkProfitBar').style.width  = '0%';
+
+        const modal = document.getElementById('breakdownModal');
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+
+        // Animate bars after render
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                document.getElementById('bkContribBar').style.width   = contribPct + '%';
+                document.getElementById('bkProfitBar').style.width    = profitPct + '%';
+                document.getElementById('bkContribPct').textContent   = contribPct + '%';
+                document.getElementById('bkProfitPct').textContent    = profitPct + '%';
+            }, 60);
+        });
+    }
+
+    function closeBreakdownModal() {
+        document.getElementById('breakdownModal').style.display = 'none';
+        document.getElementById('bkContribBar').style.width = '0%';
+        document.getElementById('bkProfitBar').style.width  = '0%';
+        document.body.style.overflow = '';
+    }
+
+    /* ─── FIRE PREVIEW TOGGLE ─── */
+    let firePreviewMode = 'today';
+
+    function setFirePreviewMode(mode) {
+        firePreviewMode = mode;
+        document.getElementById('firePrevTodayBtn').classList.toggle('active', mode === 'today');
+        document.getElementById('firePrevInflBtn').classList.toggle('active', mode === 'inflated');
+        updateFirePreview();
+    }
+
+    /* Override updateFirePreview to support both modes */
+    const _origUpdateFirePreview = updateFirePreview;
+    updateFirePreview = function() {
+        const expenses   = parseFormattedNumber(document.getElementById('monthlyExpenses').value);
+        const multiplier = getMultiplier();
+        const preview    = document.getElementById('firePreview');
+        if (!expenses) { preview.classList.add('hidden'); return; }
+
+        const years = parseInt(document.getElementById('years').value) || 20;
+        const expInc = getExpenseIncrease();
+
+        if (firePreviewMode === 'today') {
+            const fireNum = expenses * 12 * multiplier;
+            document.getElementById('firePreviewValue').textContent = formatCurrency(fireNum);
+            document.getElementById('firePreviewLabel').textContent = 'Your FIRE Number (Today)';
+            document.getElementById('firePreviewSub').textContent   = `= Monthly Expenses × 12 × ${multiplier}`;
+        } else {
+            const fireNum = expenses * 12 * Math.pow(1 + expInc, years) * multiplier;
+            document.getElementById('firePreviewValue').textContent = formatCurrency(fireNum);
+            document.getElementById('firePreviewLabel').textContent = `FIRE Number at Year ${years}`;
+            document.getElementById('firePreviewSub').textContent   = `inflation-adjusted at ${Math.round(expInc*100)}% per year`;
+        }
+        preview.classList.remove('hidden');
+    };
+
     // Sync main calendar toggle with modal
     document.getElementById('useCalendarYears').addEventListener('change', function() {
         const mCalCheck = document.getElementById('modalCalYears');
         if (mCalCheck) mCalCheck.checked = this.checked;
     });
 </script>
+
+<!-- BREAKDOWN MODAL -->
+<div id="breakdownModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:3000;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);" onclick="if(event.target===this)closeBreakdownModal()">
+    <div style="background:#0d0d0d;border:1px solid #222;border-radius:24px;padding:36px;width:100%;max-width:440px;animation:fadeSlideUp 0.3s ease both;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;">
+            <h2 style="color:#fff;font-size:20px;font-weight:800;letter-spacing:-0.4px;">Wealth Breakdown</h2>
+            <button onclick="closeBreakdownModal()" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#888;width:36px;height:36px;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">✕</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px;">
+            <div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                    <span style="font-size:12px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Total Invested</span>
+                    <span style="font-size:14px;font-weight:700;color:#fff;" id="bkModalContrib">PKR 0</span>
+                </div>
+                <div style="background:#1a1a1a;border-radius:6px;height:8px;overflow:hidden;">
+                    <div id="bkContribBar" style="height:100%;background:#50c878;border-radius:6px;transition:width 0.8s ease;width:0%"></div>
+                </div>
+                <div style="text-align:right;font-size:11px;color:#555;margin-top:4px;" id="bkContribPct">0%</div>
+            </div>
+            <div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                    <span style="font-size:12px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Investment Returns</span>
+                    <span style="font-size:14px;font-weight:700;color:#bef202;" id="bkModalProfit">PKR 0</span>
+                </div>
+                <div style="background:#1a1a1a;border-radius:6px;height:8px;overflow:hidden;">
+                    <div id="bkProfitBar" style="height:100%;background:#bef202;border-radius:6px;transition:width 0.8s ease;width:0%"></div>
+                </div>
+                <div style="text-align:right;font-size:11px;color:#555;margin-top:4px;" id="bkProfitPct">0%</div>
+            </div>
+            <div style="border-top:1px solid #1e1e1e;padding-top:16px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <span style="font-size:12px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Total Wealth</span>
+                    <span style="font-size:22px;font-weight:900;color:#fff;letter-spacing:-0.8px;" id="bkModalWealth">PKR 0</span>
+                </div>
+            </div>
+        </div>
+        <p style="font-size:12px;color:#444;margin-top:24px;text-align:center;line-height:1.6;">Every rupee of profit is money your money made — without you lifting a finger.</p>
+    </div>
+</div>
+
+<!-- SIMULATE PROMPT -->
+<div id="simulatePrompt" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:3500;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px);">
+    <div style="background:#0d0d0d;border:1px solid #2a2a2a;border-radius:24px;padding:36px 32px;width:100%;max-width:400px;animation:fadeSlideUp 0.3s ease both;text-align:center;">
+        <div style="font-size:40px;margin-bottom:16px;">📋</div>
+        <h3 style="color:#fff;font-size:18px;font-weight:800;margin-bottom:12px;letter-spacing:-0.3px;">Simulate with Custom SIP?</h3>
+        <p style="color:#666;font-size:14px;line-height:1.7;margin-bottom:28px;">You've made changes to your SIP schedule. Run the wealth projection with your custom SIP plan?</p>
+        <div style="display:flex;gap:12px;">
+            <button onclick="closeSimulatePrompt(false)" style="flex:1;padding:15px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;color:#888;font-size:14px;font-weight:600;cursor:pointer;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">Keep as is</button>
+            <button onclick="closeSimulatePrompt(true)" style="flex:1;padding:15px;background:linear-gradient(135deg,#bef202,#a0d000);border:none;border-radius:12px;color:#000;font-size:14px;font-weight:800;cursor:pointer;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">Simulate Now</button>
+        </div>
+    </div>
+</div>
+
+<!-- FIRE RE-RUN PROMPT -->
+<div id="fireRerunPrompt" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:3500;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px);">
+    <div style="background:#0d0d0d;border:1px solid #2a2a2a;border-radius:24px;padding:36px 32px;width:100%;max-width:400px;animation:fadeSlideUp 0.3s ease both;text-align:center;">
+        <div style="font-size:40px;margin-bottom:16px;">🔥</div>
+        <h3 style="color:#fff;font-size:18px;font-weight:800;margin-bottom:12px;letter-spacing:-0.3px;">Projected Wealth Changed</h3>
+        <p style="color:#666;font-size:14px;line-height:1.7;margin-bottom:28px;">Your wealth projection has been updated. Recalculate your FIRE numbers to reflect the new projection?</p>
+        <div style="display:flex;gap:12px;">
+            <button onclick="closeFireRerunPrompt(false)" style="flex:1;padding:15px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;color:#888;font-size:14px;font-weight:600;cursor:pointer;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">Keep old result</button>
+            <button onclick="closeFireRerunPrompt(true)" style="flex:1;padding:15px;background:linear-gradient(135deg,#bef202,#a0d000);border:none;border-radius:12px;color:#000;font-size:14px;font-weight:800;cursor:pointer;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">Recalculate FIRE</button>
+        </div>
+    </div>
+</div>
+
+<!-- SIP LIMIT WARNING -->
+<input type="hidden" id="sipLimitWarnPending" value="0">
+<div id="sipLimitWarning" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:4000;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px);">
+    <div style="background:#0d0d0d;border:1px solid #ff5f5f;border-radius:24px;padding:36px 32px;width:100%;max-width:400px;animation:fadeSlideUp 0.3s ease both;text-align:center;">
+        <div style="font-size:40px;margin-bottom:16px;">⚠️</div>
+        <h3 style="color:#ff5f5f;font-size:18px;font-weight:800;margin-bottom:12px;letter-spacing:-0.3px;">Exceeds SIP Limit</h3>
+        <p style="color:#888;font-size:14px;line-height:1.7;margin-bottom:8px;">
+            The amount you entered (<strong style="color:#fff" id="sipLimitWarnAmt"></strong>) exceeds your SIP stop limit of <strong style="color:#fff" id="sipLimitWarnLimit"></strong>.
+        </p>
+        <p style="color:#666;font-size:13px;line-height:1.6;margin-bottom:28px;">Do you want to save it anyway, or go back and edit the amount?</p>
+        <div style="display:flex;gap:12px;">
+            <button onclick="closeSipLimitWarning(false)" style="flex:1;padding:15px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;color:#888;font-size:14px;font-weight:600;cursor:pointer;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">Edit Amount</button>
+            <button onclick="closeSipLimitWarning(true)" style="flex:1;padding:15px;background:#ff5f5f;border:none;border-radius:12px;color:#fff;font-size:14px;font-weight:800;cursor:pointer;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Save Anyway</button>
+        </div>
+    </div>
+</div>
+
+<div id="toastBar"></div>
 </body>
 </html>
