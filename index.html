@@ -1959,24 +1959,45 @@
         btn.style.background = 'rgba(0,0,0,0.30)';
         valueRow.style.display = 'block';
 
-        updateUsdDisplay(result);
+        updateUsdDisplay(result, getDisplayedWealth());
     }
 
-    function updateUsdDisplay(result) {
+    function updateUsdDisplay(result, displayedWealth) {
         if (!usdConversionActive || !result) return;
-        const wealth = lastWealth;
+        const wealth = displayedWealth !== undefined ? displayedWealth : lastWealth;
         if (!wealth) return;
 
         const usdValue = wealth * result.rate;
         document.getElementById('usdValueDisplay').textContent = formatUsd(usdValue);
-        document.getElementById('usdRateInfo').textContent     = `1 ${activeCurrency} = ${result.rate < 0.01 ? result.rate.toFixed(6) : result.rate < 1 ? result.rate.toFixed(4) : result.rate.toFixed(4)} USD`;
-        document.getElementById('usdRateSource').textContent   = `Live rate · ${result.source}`;
+
+        // Show "1 USD = X PKR" when rate < 1 (i.e. base currency is weaker than USD)
+        // Show "1 USD = X PKR" always — more intuitive
+        if (result.rate > 0) {
+            const inverse = 1 / result.rate;
+            let rateLabel;
+            if (inverse >= 1) {
+                // e.g. 1 USD = 285.00 PKR
+                rateLabel = `1 USD = ${inverse < 10 ? inverse.toFixed(4) : inverse.toFixed(2)} ${activeCurrency}`;
+            } else {
+                // e.g. 1 USD = 0.0035 PKR (very strong currencies like KWD)
+                rateLabel = `1 ${activeCurrency} = ${result.rate.toFixed(4)} USD`;
+            }
+            document.getElementById('usdRateInfo').textContent = rateLabel;
+        }
+        document.getElementById('usdRateSource').textContent = `Live rate · ${result.source}`;
+    }
+
+    function getDisplayedWealth() {
+        // Returns the currently shown wealth value (inflation-adjusted if toggled, else raw)
+        const infl    = document.getElementById('inflationAdjusted')?.checked;
+        const deflate = infl ? Math.pow(1 + getInflationRate(), -lastYears) : 1;
+        return lastWealth * deflate;
     }
 
     async function refreshUsdIfActive() {
         if (!usdConversionActive || activeCurrency === 'USD') return;
         const result = await fetchUsdRate(activeCurrency);
-        if (result) updateUsdDisplay(result);
+        if (result) updateUsdDisplay(result, getDisplayedWealth());
     }
 
     // Hide USD row when currency changes or results recalculate
@@ -2290,6 +2311,12 @@
         const chartC = infl ? deflateArray(lastContribData, rate) : lastContribData;
         const chartF = (infl && lastFireLine) ? deflateArray(lastFireLine, rate) : lastFireLine;
         buildChart(labels, chartW, chartC, chartF);
+
+        // Keep USD conversion in sync with currently displayed (possibly inflation-adjusted) wealth
+        if (usdConversionActive) {
+            const cached = usdRateCache[activeCurrency];
+            if (cached) updateUsdDisplay(cached, w);
+        }
     }
 
     function getCalendarYear(y) { return calendarStart + y - 1; }
@@ -2569,6 +2596,12 @@
 
             updateYearsLabel();
             updateIncomeDisplay(w);
+
+            // Keep USD conversion in sync
+            if (usdConversionActive) {
+                const cached = usdRateCache[activeCurrency];
+                if (cached) updateUsdDisplay(cached, dw);
+            }
 
             // Show custom SIP badge if saved custom schedule is active
             const customBadge = document.getElementById('customSipBadge');
