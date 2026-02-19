@@ -79,6 +79,8 @@
             text-align: center;
             box-shadow: 0 16px 60px rgba(190, 242, 2, 0.25);
             animation: fadeSlideUp 0.5s ease both;
+            overflow: hidden;
+            box-sizing: border-box;
         }
 
         @keyframes fadeSlideUp {
@@ -159,6 +161,8 @@
             grid-template-columns: 1fr 1fr;
             gap: 14px;
             text-align: left;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .income-card {
@@ -185,9 +189,9 @@
             margin-bottom: 12px;
             color: #ffffff;
             font-weight: 600;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            white-space: normal;
+            word-break: break-word;
+            line-height: 1.3;
         }
 
         .income-card .card-value {
@@ -548,27 +552,24 @@
             border: 1px solid #2a2a2a;
         }
 
-        .info-icon:hover .tooltip,
-        .info-icon:active .tooltip { display: block; }
+        /* tooltip shown via JS */
 
         .tooltip {
             display: none;
-            position: absolute;
-            bottom: 26px;
-            left: 50%;
-            transform: translateX(-50%);
+            position: fixed;
             background: #1a1a1a;
             color: #ffffff;
             padding: 12px 14px;
             border-radius: 10px;
             font-size: 12px;
             font-weight: 400;
-            z-index: 1000;
+            z-index: 9000;
             box-shadow: 0 8px 24px rgba(0,0,0,0.6);
-            width: max-content;
-            max-width: min(240px, calc(100vw - 40px));
+            width: 220px;
+            max-width: calc(100vw - 24px);
             white-space: normal;
             border: 1px solid #2a2a2a;
+            pointer-events: none;
         }
 
         .tooltip::after {
@@ -579,6 +580,15 @@
             border: 6px solid transparent;
             border-top-color: #1a1a1a;
         }
+
+        #currencyList::-webkit-scrollbar { width: 4px; }
+        #currencyList::-webkit-scrollbar-track { background: transparent; }
+        #currencyList::-webkit-scrollbar-thumb { background: #222; border-radius: 4px; }
+        #currencyList::-webkit-scrollbar-thumb:hover { background: #333; }
+        #currencySearch::placeholder { color: #333; }
+
+        #currencySelect:hover { border-color: #bef202; }
+        #currencySelect option { background: #111; color: #fff; }
 
         .calc-btn {
             width: 100%;
@@ -681,16 +691,15 @@
 
         /* ── PASSIVE INFO BOX (inside yellow card) ── */
         .passive-info-box {
-            border-radius: 16px;
-            padding: 20px 22px;
-            margin-bottom: 22px;
+            background: #0a0a0a;
+            border: 1px solid #1a1a1a;
+            border-left: 3px solid rgba(190,242,2,0.4);
+            border-radius: 14px;
+            padding: 16px 18px;
+            margin-bottom: 24px;
             display: flex;
-            gap: 14px;
+            gap: 12px;
             align-items: flex-start;
-            background: rgba(0,0,0,0.62);
-            border: 1px solid rgba(0,0,0,0.2);
-            border-left: 4px solid #000000;
-            text-align: left;
         }
 
         .passive-info-box .emoji { font-size: 24px; flex-shrink: 0; padding-top: 2px; }
@@ -909,7 +918,7 @@
             .container { padding: 32px 20px; }
             h1 { font-size: 26px; margin-bottom: 48px; padding-right: 0; padding-left: 0; }
             h1 button { position: static !important; transform: none !important; display: block; margin: 12px auto 0; font-size: 12px; padding: 8px 16px; }
-            .result-box { padding: 36px 22px; }
+            .result-box { padding: 36px 20px; }
             .result-box .amount { font-size: 40px; }
             .income-grid { gap: 10px; }
             .income-card { padding: 18px 14px; }
@@ -920,8 +929,6 @@
             .suggestion-card { flex: 0 0 92%; }
             .suggestion-card .s-value { font-size: 28px; }
             .sip-modal-box { padding: 24px 16px; margin: 12px; border-radius: 20px; }
-            .info-icon .tooltip { left: auto; right: 0; transform: none; max-width: 220px; }
-            .info-icon .tooltip::after { left: auto; right: 12px; transform: none; }
             .fire-info-box p, .passive-info-box p { white-space: normal; word-break: break-word; overflow-wrap: break-word; }
         }
 
@@ -1203,13 +1210,57 @@
 </head>
 <body>
 <div class="container">
-    <h1 style="position:relative;text-align:center;margin-bottom:44px;font-size:34px;font-weight:800;letter-spacing:-0.8px;color:#ffffff;padding-right:110px;padding-left:110px;">
+    <h1 style="position:relative;text-align:center;margin-bottom:20px;font-size:34px;font-weight:800;letter-spacing:-0.8px;color:#ffffff;padding-right:110px;padding-left:110px;">
         Wealth Calculator
         <button onclick="clearAll()" style="position:absolute;top:50%;right:0;transform:translateY(-50%);background:#1a1a1a;border:1px solid #2a2a2a;color:#666;padding:8px 14px;border-radius:12px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;letter-spacing:0.3px;white-space:nowrap;" onmouseover="this.style.borderColor='#bef202';this.style.color='#bef202'" onmouseout="this.style.borderColor='#2a2a2a';this.style.color='#666'">✕ Clear All</button>
     </h1>
 
+    <!-- Currency Selector -->
+    <div style="display:flex;justify-content:center;margin-bottom:36px;">
+        <div id="currencyPickerTrigger" onclick="toggleCurrencyPicker()" style="display:flex;align-items:center;gap:12px;background:#111;border:1px solid #2a2a2a;border-radius:14px;padding:12px 20px;cursor:pointer;min-width:240px;justify-content:space-between;transition:border-color 0.2s;" onmouseover="this.style.borderColor='#bef202'" onmouseout="if(!document.getElementById('currencyPickerPanel').classList.contains('open'))this.style.borderColor='#2a2a2a'">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span id="currencyPickerFlag" style="font-size:22px;">🇺🇸</span>
+                <div>
+                    <div id="currencyPickerCode" style="font-size:15px;font-weight:800;color:#fff;letter-spacing:0.3px;">USD</div>
+                    <div id="currencyPickerName" style="font-size:11px;color:#555;font-weight:500;margin-top:1px;">US Dollar</div>
+                </div>
+            </div>
+            <svg id="currencyPickerChevron" width="16" height="16" viewBox="0 0 16 16" fill="none" style="transition:transform 0.25s;color:#555;flex-shrink:0;">
+                <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+    </div>
+
+    <!-- Currency Picker Panel -->
+    <div id="currencyPickerPanel" style="display:none;position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,0.85);backdrop-filter:blur(12px);align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;">
+        <div style="background:#0d0d0d;border:1px solid #1f1f1f;border-radius:24px;width:100%;max-width:480px;max-height:80vh;display:flex;flex-direction:column;animation:fadeSlideUp 0.25s ease both;overflow:hidden;margin:auto;">
+            <!-- Header -->
+            <div style="padding:24px 24px 16px;border-bottom:1px solid #1a1a1a;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+                <div>
+                    <div style="font-size:17px;font-weight:800;color:#fff;letter-spacing:-0.3px;">Select Currency</div>
+                    <div style="font-size:12px;color:#444;margin-top:3px;">Choose your country's currency</div>
+                </div>
+                <button onclick="closeCurrencyPicker()" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#666;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all 0.15s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#666'">✕</button>
+            </div>
+            <!-- Search -->
+            <div style="padding:12px 20px;border-bottom:1px solid #1a1a1a;flex-shrink:0;">
+                <div style="position:relative;">
+                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none;">
+                        <circle cx="6.5" cy="6.5" r="5.5" stroke="#444" stroke-width="1.5"/>
+                        <path d="M11 11l2.5 2.5" stroke="#444" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <input id="currencySearch" type="text" placeholder="Search currency or country…" oninput="filterCurrencies(this.value)"
+                        style="width:100%;background:#111;border:1px solid #222;border-radius:10px;padding:10px 12px 10px 36px;color:#fff;font-size:13px;font-family:inherit;outline:none;caret-color:#bef202;"
+                        onfocus="this.style.borderColor='#bef202'" onblur="this.style.borderColor='#222'">
+                </div>
+            </div>
+            <!-- List -->
+            <div id="currencyList" style="overflow-y:auto;flex:1;padding:8px 0;"></div>
+        </div>
+    </div>
+
     <div class="input-group">
-        <label>Initial Investment (PKR)
+        <label>Initial Investment (<span class="currency-label">USD</span>)
             <span class="info-icon">i<span class="tooltip">One-time lump sum amount you're investing today</span></span>
         </label>
         <!-- FIX 2: placeholder 100,000 | FIX 3: inputmode="numeric" for numeric keyboard -->
@@ -1218,7 +1269,7 @@
     </div>
 
     <div class="input-group">
-        <label>Monthly SIP (PKR) — Optional
+        <label>Monthly SIP (<span class="currency-label">USD</span>) — Optional
             <span class="info-icon">i<span class="tooltip">Systematic Investment Plan – fixed monthly contribution</span></span>
         </label>
         <input type="text" id="sip" placeholder="5,000"
@@ -1319,23 +1370,42 @@
             <input type="checkbox" id="inflationAdjusted" style="margin-right:12px;width:20px;height:20px;cursor:pointer;accent-color:#bef202;">
             <span class="inflation-label-text">Show Inflation-Adjusted Numbers</span>
             <span class="info-icon" style="margin-left:8px;">i
-                <span class="tooltip">Shows wealth in today's purchasing power. Assumes 10% annual inflation by default — you can change this rate below.</span>
+                <span class="tooltip" id="inflToggleTooltip">Shows wealth in today's purchasing power using your selected country's historical average inflation rate. You can adjust the rate below.</span>
             </span>
         </label>
         <div id="inflationRateRow" style="display:none;align-items:center;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid #222;">
             <span style="font-size:13px;color:#666;">Inflation rate used:</span>
-            <input type="number" id="customInflationRate" value="10" step="0.1" inputmode="decimal"
+            <input type="number" id="customInflationRate" value="3" step="0.1" inputmode="decimal"
                    style="width:80px;padding:8px 12px;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:8px;color:#bef202;font-size:14px;font-weight:700;"
                    oninput="onInflationRateChange()">
             <span style="font-size:13px;color:#666;">% per year</span>
+            <span id="inflDefaultHint" style="font-size:11px;color:#444;margin-left:4px;">(US historical avg)</span>
         </div>
     </div>
 
     <!-- RESULT CARD -->
     <div class="result-box" id="resultsSection" style="display:none;">
         <h2>Projected Wealth</h2>
-        <div class="amount" id="finalWealth">PKR 0</div>
+        <div class="amount" id="finalWealth">—</div>
         <p class="years-label" id="yearsLabel">after 20 years</p>
+
+        <!-- USD Conversion -->
+        <div id="usdConvertRow" style="display:flex;align-items:center;justify-content:center;gap:10px;margin:-8px 0 18px;">
+            <button id="usdToggleBtn" onclick="toggleUsdConversion()" style="display:flex;align-items:center;gap:6px;background:rgba(0,0,0,0.18);border:1.5px solid rgba(0,0,0,0.25);border-radius:20px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:700;color:rgba(0,0,0,0.6);font-family:inherit;transition:all 0.2s;" onmouseover="this.style.background='rgba(0,0,0,0.28)'" onmouseout="this.style.background='rgba(0,0,0,0.18)'">
+                <span id="usdToggleIcon" style="font-size:14px;">💱</span>
+                <span id="usdToggleLabel">Show in USD</span>
+            </button>
+        </div>
+        <!-- USD value display -->
+        <div id="usdValueRow" style="display:none;margin:-10px 0 18px;animation:fadeSlideUp 0.3s ease both;">
+            <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(0,0,0,0.15);border-radius:14px;padding:8px 18px;">
+                <span style="font-size:13px;color:rgba(0,0,0,0.5);">≈</span>
+                <span id="usdValueDisplay" style="font-size:22px;font-weight:900;color:#000;letter-spacing:-0.5px;">$0</span>
+                <span style="font-size:11px;color:rgba(0,0,0,0.4);font-weight:600;">USD</span>
+                <span id="usdRateInfo" style="font-size:10px;color:rgba(0,0,0,0.35);margin-left:4px;"></span>
+            </div>
+            <div id="usdRateSource" style="font-size:10px;color:rgba(0,0,0,0.35);margin-top:5px;"></div>
+        </div>
         
         <!-- Custom SIP indicator -->
         <div id="customSipBadge" style="display:none;background:rgba(0,0,0,0.25);border:1.5px solid rgba(0,0,0,0.35);border-radius:8px;padding:8px 14px;margin:0 auto 20px;max-width:fit-content;">
@@ -1347,19 +1417,19 @@
             <div class="bk-card" onclick="openBreakdownModal()">
                 <div class="bk-icon">💰</div>
                 <div class="bk-label">Total Invested</div>
-                <div class="bk-value" id="totalContrib">PKR 0</div>
+                <div class="bk-value" id="totalContrib">—</div>
                 <div class="bk-tap">tap for details</div>
             </div>
             <div class="bk-card" onclick="openBreakdownModal()">
                 <div class="bk-icon">📈</div>
                 <div class="bk-label">Total Profit</div>
-                <div class="bk-value bk-profit" id="totalProfit">PKR 0</div>
+                <div class="bk-value bk-profit" id="totalProfit">—</div>
                 <div class="bk-tap">tap for details</div>
             </div>
             <div class="bk-card" onclick="openBreakdownModal()">
                 <div class="bk-icon">🏆</div>
                 <div class="bk-label">Total Wealth</div>
-                <div class="bk-value" id="totalWealthBreakdown">PKR 0</div>
+                <div class="bk-value" id="totalWealthBreakdown">—</div>
                 <div class="bk-tap">tap for details</div>
             </div>
         </div>
@@ -1383,26 +1453,26 @@
         <!-- Your Return — full width featured card -->
         <div class="income-card income-card-featured">
             <div class="card-label">Your Return (<span id="yourReturnPct">12</span>%)</div>
-            <div class="card-value" id="yourReturnIncome">PKR 0</div>
+            <div class="card-value" id="yourReturnIncome">—</div>
         </div>
 
         <!-- 2×2 lower-risk alternatives -->
         <div class="income-grid">
             <div class="income-card">
-                <div class="card-label">Govt Bonds (7%)</div>
-                <div class="card-value" id="dividendIncome">PKR 0</div>
+                <div class="card-label" id="bondsLabel">Govt Bonds (7%)</div>
+                <div class="card-value" id="dividendIncome">—</div>
             </div>
             <div class="income-card">
-                <div class="card-label">Fixed Deposit (8%)</div>
-                <div class="card-value" id="fdIncome">PKR 0</div>
+                <div class="card-label" id="fdLabel">Fixed Deposit (8%)</div>
+                <div class="card-value" id="fdIncome">—</div>
             </div>
             <div class="income-card">
-                <div class="card-label">Rental Yield (6%)</div>
-                <div class="card-value" id="rentalIncome">PKR 0</div>
+                <div class="card-label" id="rentalLabel">Rental Yield (6%)</div>
+                <div class="card-value" id="rentalIncome">—</div>
             </div>
             <div class="income-card">
-                <div class="card-label">Gold (9%)</div>
-                <div class="card-value" id="goldIncome">PKR 0</div>
+                <div class="card-label" id="goldLabel">Gold (9%)</div>
+                <div class="card-value" id="goldIncome">—</div>
             </div>
         </div>
 
@@ -1420,7 +1490,7 @@
                 </div>
                 <div class="income-card income-card-custom">
                     <div class="card-label">Custom ROI (<span id="customRoiLabel">8</span>%)</div>
-                    <div class="card-value" id="customIncome">PKR 0</div>
+                    <div class="card-value" id="customIncome">—</div>
                 </div>
             </div>
         </div>
@@ -1457,7 +1527,7 @@
             </div>
 
             <div class="input-group">
-                <label>Current Monthly Expenses (PKR)
+                <label>Current Monthly Expenses (<span class="currency-label">USD</span>)
                     <span class="info-icon">i<span class="tooltip">Your current monthly living expenses, used to calculate your FIRE number</span></span>
                 </label>
                 <input type="text" id="monthlyExpenses" placeholder="30,000"
@@ -1468,8 +1538,8 @@
                 <label>Yearly Expense Increase due to Inflation (%)
                     <span class="info-icon">i<span class="tooltip">Inflation erodes purchasing power every year — meaning your expenses will cost more in the future. Your FIRE target rises with it, so the bar keeps moving up.</span></span>
                 </label>
-                <input type="number" id="expenseIncrease" value="10" step="0.1" inputmode="decimal">
-                <small>💡 Defaulting to <strong style="color:#bef202">10%</strong> — the average annual inflation rate in Pakistan. Enter 0 if you want to ignore inflation.</small>
+                <input type="number" id="expenseIncrease" value="3" step="0.1" inputmode="decimal">
+                <small id="inflationHint">💡 Defaulting to <strong style="color:#bef202">3%</strong> — the average annual inflation rate in the US. Enter 0 if you want to ignore inflation.</small>
             </div>
 
             <div class="input-group">
@@ -1488,7 +1558,7 @@
                     <button class="toggle-btn" id="firePrevInflBtn" onclick="setFirePreviewMode('inflated')" style="flex:1;">At Year N</button>
                 </div>
                 <span class="fire-preview-label" id="firePreviewLabel">Your FIRE Number (Today)</span>
-                <span class="fire-preview-value" id="firePreviewValue">PKR 0</span>
+                <span class="fire-preview-value" id="firePreviewValue">—</span>
                 <span class="fire-preview-sub" id="firePreviewSub">= Monthly Expenses × 12 × 25</span>
             </div>
 
@@ -1588,7 +1658,8 @@
 
     /* ─── HELPERS ─── */
     function parseFormattedNumber(str) {
-        return parseFloat((str || '').replace(/,/g, '')) || 0;
+        // Remove everything except digits and the last decimal point/comma
+        return parseFloat((str || '').replace(/[^0-9.]/g, '')) || 0;
     }
 
     function formatNumberInput(input) {
@@ -1596,7 +1667,9 @@
         const oldLen    = input.value.length;
         const digits    = input.value.replace(/\D/g, '');
         if (!digits) { input.value = ''; return; }
-        const formatted = parseInt(digits).toLocaleString('en-US');
+        const num       = parseInt(digits);
+        const c         = getCurrency();
+        const formatted = num.toLocaleString(c.locale);
         input.value = formatted;
         const diff = formatted.length - oldLen;
         try { input.setSelectionRange(cursorPos + diff, cursorPos + diff); } catch(e){}
@@ -1607,26 +1680,522 @@
         return String(n).split('').map(c => map[c] || c).join('');
     }
 
-    function formatCurrency(value) {
-        if (!isFinite(value) || isNaN(value)) return 'PKR —';
-        const v = Math.round(value);
-        const abs = Math.abs(v);
-        // Scientific notation for absurdly large numbers (> 99,999 Cr = 999 billion)
-        if (abs >= 100_000 * 10_000_000) {
-            const exp = Math.floor(Math.log10(abs));
-            const coeff = (abs / Math.pow(10, exp)).toFixed(2);
-            return `PKR ${coeff}×10${toSuperscript(exp)}`;
+    /* ─── CURRENCY CONFIG ─── */
+    const CURRENCIES = {
+        // ── Major / Current 12 ──────────────────────────────────────
+        USD: { flag:'🇺🇸', symbol:'$',   name:'US Dollar',          country:'the US',         locale:'en-US', decimals:2, inflation:3,  sciThreshold:1e15,
+               units:[{min:1e12,label:'T',div:1e12},{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'USD', passiveRates:{bonds:0.055,fd:0.04,rental:0.06,gold:0.08,bondsLabel:'Treasury Bonds',fdLabel:'High-Yield Savings',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        EUR: { flag:'🇪🇺', symbol:'€',   name:'Euro',               country:'the Eurozone',   locale:'de-DE', decimals:2, inflation:3,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'EUR', passiveRates:{bonds:0.025,fd:0.02,rental:0.04,gold:0.08,bondsLabel:'EU Govt Bonds',fdLabel:'Term Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        GBP: { flag:'🇬🇧', symbol:'£',   name:'British Pound',      country:'the UK',         locale:'en-GB', decimals:2, inflation:4,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'GBP', passiveRates:{bonds:0.05,fd:0.035,rental:0.055,gold:0.085,bondsLabel:'UK Gilts',fdLabel:'Fixed-Rate Savings',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        JPY: { flag:'🇯🇵', symbol:'¥',   name:'Japanese Yen',       country:'Japan',          locale:'ja-JP', decimals:0, inflation:3,  sciThreshold:1e15,
+               units:[{min:1e12,label:'T',div:1e12},{min:1e8,label:'Oku',div:1e8},{min:1e4,label:'Man',div:1e4}],
+               chartLabel:'JPY', passiveRates:{bonds:0.012,fd:0.005,rental:0.045,gold:0.09,bondsLabel:'JGB Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        CHF: { flag:'🇨🇭', symbol:'CHF', name:'Swiss Franc',        country:'Switzerland',    locale:'de-CH', decimals:2, inflation:2,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'CHF', passiveRates:{bonds:0.012,fd:0.008,rental:0.032,gold:0.07,bondsLabel:'Swiss Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        CAD: { flag:'🇨🇦', symbol:'C$',  name:'Canadian Dollar',    country:'Canada',         locale:'en-CA', decimals:2, inflation:3,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'CAD', passiveRates:{bonds:0.05,fd:0.035,rental:0.05,gold:0.085,bondsLabel:'Canada Bonds',fdLabel:'GIC / Term Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        AUD: { flag:'🇦🇺', symbol:'A$',  name:'Australian Dollar',  country:'Australia',      locale:'en-AU', decimals:2, inflation:3,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'AUD', passiveRates:{bonds:0.055,fd:0.04,rental:0.05,gold:0.09,bondsLabel:'Govt Bonds',fdLabel:'Term Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        SGD: { flag:'🇸🇬', symbol:'S$',  name:'Singapore Dollar',   country:'Singapore',      locale:'en-SG', decimals:2, inflation:2,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'SGD', passiveRates:{bonds:0.028,fd:0.02,rental:0.038,gold:0.075,bondsLabel:'SGS Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        // ── South Asia ───────────────────────────────────────────────
+        PKR: { flag:'🇵🇰', symbol:'PKR', name:'Pakistani Rupee',    country:'Pakistan',       locale:'en-PK', decimals:0, inflation:10, sciThreshold:1e12,
+               units:[{min:1e7,label:'Cr',div:1e7},{min:1e5,label:'L',div:1e5},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'PKR', passiveRates:{bonds:0.11,fd:0.09,rental:0.04,gold:0.14,bondsLabel:'Govt Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        INR: { flag:'🇮🇳', symbol:'₹',   name:'Indian Rupee',       country:'India',          locale:'en-IN', decimals:0, inflation:5,  sciThreshold:1e12,
+               units:[{min:1e7,label:'Cr',div:1e7},{min:1e5,label:'L',div:1e5},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'INR', passiveRates:{bonds:0.078,fd:0.07,rental:0.025,gold:0.12,bondsLabel:'Govt Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        BDT: { flag:'🇧🇩', symbol:'৳',   name:'Bangladeshi Taka',   country:'Bangladesh',     locale:'bn-BD', decimals:0, inflation:8,  sciThreshold:1e12,
+               units:[{min:1e7,label:'Cr',div:1e7},{min:1e5,label:'L',div:1e5},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'BDT', passiveRates:{bonds:0.08,fd:0.08,rental:0.05,gold:0.12,bondsLabel:'Govt Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        LKR: { flag:'🇱🇰', symbol:'Rs',  name:'Sri Lankan Rupee',   country:'Sri Lanka',      locale:'si-LK', decimals:0, inflation:12, sciThreshold:1e12,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'LKR', passiveRates:{bonds:0.1,fd:0.1,rental:0.04,gold:0.13,bondsLabel:'Govt Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        // ── Middle East ──────────────────────────────────────────────
+        AED: { flag:'🇦🇪', symbol:'AED', name:'UAE Dirham',         country:'the UAE',        locale:'ar-AE', decimals:2, inflation:4,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'AED', passiveRates:{bonds:0.04,fd:0.035,rental:0.07,gold:0.08,bondsLabel:'UAE Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        SAR: { flag:'🇸🇦', symbol:'SAR', name:'Saudi Riyal',        country:'Saudi Arabia',   locale:'ar-SA', decimals:2, inflation:3,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'SAR', passiveRates:{bonds:0.04,fd:0.03,rental:0.055,gold:0.08,bondsLabel:'Saudi Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        KWD: { flag:'🇰🇼', symbol:'KD',  name:'Kuwaiti Dinar',      country:'Kuwait',         locale:'ar-KW', decimals:3, inflation:3,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'KWD', passiveRates:{bonds:0.035,fd:0.025,rental:0.05,gold:0.075,bondsLabel:'Kuwait Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        QAR: { flag:'🇶🇦', symbol:'QR',  name:'Qatari Riyal',       country:'Qatar',          locale:'ar-QA', decimals:2, inflation:3,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'QAR', passiveRates:{bonds:0.04,fd:0.035,rental:0.065,gold:0.08,bondsLabel:'Qatar Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        BHD: { flag:'🇧🇭', symbol:'BD',  name:'Bahraini Dinar',     country:'Bahrain',        locale:'ar-BH', decimals:3, inflation:3,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'BHD', passiveRates:{bonds:0.04,fd:0.03,rental:0.055,gold:0.08,bondsLabel:'Bahrain Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        OMR: { flag:'🇴🇲', symbol:'OMR', name:'Omani Rial',         country:'Oman',           locale:'ar-OM', decimals:3, inflation:3,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'OMR', passiveRates:{bonds:0.04,fd:0.03,rental:0.055,gold:0.08,bondsLabel:'Oman Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        ILS: { flag:'🇮🇱', symbol:'₪',  name:'Israeli Shekel',     country:'Israel',         locale:'he-IL', decimals:2, inflation:3,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'ILS', passiveRates:{bonds:0.04,fd:0.03,rental:0.035,gold:0.08,bondsLabel:'Israel Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        // ── Africa ───────────────────────────────────────────────────
+        EGP: { flag:'🇪🇬', symbol:'E£',  name:'Egyptian Pound',     country:'Egypt',          locale:'ar-EG', decimals:0, inflation:25, sciThreshold:1e12,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'EGP', passiveRates:{bonds:0.12,fd:0.12,rental:0.06,gold:0.16,bondsLabel:'Govt Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        ZAR: { flag:'🇿🇦', symbol:'R',   name:'South African Rand', country:'South Africa',   locale:'en-ZA', decimals:2, inflation:6,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'ZAR', passiveRates:{bonds:0.09,fd:0.08,rental:0.07,gold:0.11,bondsLabel:'SA Govt Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        KES: { flag:'🇰🇪', symbol:'KSh', name:'Kenyan Shilling',    country:'Kenya',          locale:'sw-KE', decimals:0, inflation:7,  sciThreshold:1e12,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'KES', passiveRates:{bonds:0.12,fd:0.1,rental:0.07,gold:0.12,bondsLabel:'Kenya Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        NGN: { flag:'🇳🇬', symbol:'₦',  name:'Nigerian Naira',     country:'Nigeria',        locale:'en-NG', decimals:0, inflation:28, sciThreshold:1e12,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'NGN', passiveRates:{bonds:0.12,fd:0.11,rental:0.08,gold:0.18,bondsLabel:'FGN Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        GHS: { flag:'🇬🇭', symbol:'₵',  name:'Ghanaian Cedi',      country:'Ghana',          locale:'ak-GH', decimals:2, inflation:23, sciThreshold:1e12,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'GHS', passiveRates:{bonds:0.18,fd:0.17,rental:0.07,gold:0.18,bondsLabel:'Govt Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        MAD: { flag:'🇲🇦', symbol:'MAD', name:'Moroccan Dirham',    country:'Morocco',        locale:'ar-MA', decimals:2, inflation:5,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'MAD', passiveRates:{bonds:0.045,fd:0.035,rental:0.05,gold:0.09,bondsLabel:'Govt Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        // ── East / SE Asia ───────────────────────────────────────────
+        CNY: { flag:'🇨🇳', symbol:'¥',   name:'Chinese Yuan',       country:'China',          locale:'zh-CN', decimals:2, inflation:3,  sciThreshold:1e15,
+               units:[{min:1e12,label:'T',div:1e12},{min:1e8,label:'亿',div:1e8},{min:1e4,label:'万',div:1e4}],
+               chartLabel:'CNY', passiveRates:{bonds:0.035,fd:0.03,rental:0.025,gold:0.085,bondsLabel:'CGB Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        HKD: { flag:'🇭🇰', symbol:'HK$', name:'Hong Kong Dollar',   country:'Hong Kong',      locale:'zh-HK', decimals:2, inflation:2,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'HKD', passiveRates:{bonds:0.04,fd:0.025,rental:0.03,gold:0.08,bondsLabel:'HK Govt Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        KRW: { flag:'🇰🇷', symbol:'₩',  name:'South Korean Won',   country:'South Korea',    locale:'ko-KR', decimals:0, inflation:3,  sciThreshold:1e15,
+               units:[{min:1e12,label:'조',div:1e12},{min:1e8,label:'억',div:1e8},{min:1e4,label:'만',div:1e4}],
+               chartLabel:'KRW', passiveRates:{bonds:0.04,fd:0.035,rental:0.025,gold:0.085,bondsLabel:'KTB Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        TWD: { flag:'🇹🇼', symbol:'NT$', name:'Taiwan Dollar',      country:'Taiwan',         locale:'zh-TW', decimals:0, inflation:2,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'TWD', passiveRates:{bonds:0.015,fd:0.015,rental:0.02,gold:0.075,bondsLabel:'Govt Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        MYR: { flag:'🇲🇾', symbol:'RM',  name:'Malaysian Ringgit',  country:'Malaysia',       locale:'ms-MY', decimals:2, inflation:3,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'MYR', passiveRates:{bonds:0.04,fd:0.035,rental:0.045,gold:0.09,bondsLabel:'MGS Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        IDR: { flag:'🇮🇩', symbol:'Rp',  name:'Indonesian Rupiah',  country:'Indonesia',      locale:'id-ID', decimals:0, inflation:4,  sciThreshold:1e15,
+               units:[{min:1e12,label:'T',div:1e12},{min:1e9,label:'M',div:1e9},{min:1e6,label:'Jt',div:1e6}],
+               chartLabel:'IDR', passiveRates:{bonds:0.08,fd:0.07,rental:0.045,gold:0.12,bondsLabel:'SBN Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        THB: { flag:'🇹🇭', symbol:'฿',  name:'Thai Baht',          country:'Thailand',       locale:'th-TH', decimals:2, inflation:2,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'THB', passiveRates:{bonds:0.03,fd:0.02,rental:0.045,gold:0.08,bondsLabel:'Thai Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        PHP: { flag:'🇵🇭', symbol:'₱',  name:'Philippine Peso',    country:'Philippines',    locale:'fil-PH', decimals:2, inflation:4, sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'PHP', passiveRates:{bonds:0.055,fd:0.04,rental:0.05,gold:0.1,bondsLabel:'RTBs Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        VND: { flag:'🇻🇳', symbol:'₫',  name:'Vietnamese Dong',    country:'Vietnam',        locale:'vi-VN', decimals:0, inflation:4,  sciThreshold:1e15,
+               units:[{min:1e12,label:'T',div:1e12},{min:1e9,label:'Tỷ',div:1e9},{min:1e6,label:'Tr',div:1e6}],
+               chartLabel:'VND', passiveRates:{bonds:0.07,fd:0.07,rental:0.05,gold:0.12,bondsLabel:'Govt Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        NZD: { flag:'🇳🇿', symbol:'NZ$', name:'New Zealand Dollar', country:'New Zealand',    locale:'en-NZ', decimals:2, inflation:3,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'NZD', passiveRates:{bonds:0.055,fd:0.04,rental:0.05,gold:0.09,bondsLabel:'NZ Govt Bonds',fdLabel:'Term Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        // ── Europe ────────────────────────────────────────────────────
+        SEK: { flag:'🇸🇪', symbol:'kr',  name:'Swedish Krona',      country:'Sweden',         locale:'sv-SE', decimals:2, inflation:3,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'SEK', passiveRates:{bonds:0.025,fd:0.02,rental:0.035,gold:0.08,bondsLabel:'Swedish Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        NOK: { flag:'🇳🇴', symbol:'kr',  name:'Norwegian Krone',    country:'Norway',         locale:'nb-NO', decimals:2, inflation:3,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'NOK', passiveRates:{bonds:0.035,fd:0.025,rental:0.04,gold:0.08,bondsLabel:'Norway Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        DKK: { flag:'🇩🇰', symbol:'kr',  name:'Danish Krone',       country:'Denmark',        locale:'da-DK', decimals:2, inflation:3,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'DKK', passiveRates:{bonds:0.025,fd:0.015,rental:0.035,gold:0.08,bondsLabel:'Danish Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        PLN: { flag:'🇵🇱', symbol:'zł',  name:'Polish Złoty',       country:'Poland',         locale:'pl-PL', decimals:2, inflation:5,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'PLN', passiveRates:{bonds:0.05,fd:0.04,rental:0.05,gold:0.09,bondsLabel:'Polish Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        CZK: { flag:'🇨🇿', symbol:'Kč',  name:'Czech Koruna',       country:'Czech Republic', locale:'cs-CZ', decimals:2, inflation:4,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'CZK', passiveRates:{bonds:0.035,fd:0.03,rental:0.045,gold:0.08,bondsLabel:'Czech Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        HUF: { flag:'🇭🇺', symbol:'Ft',  name:'Hungarian Forint',   country:'Hungary',        locale:'hu-HU', decimals:0, inflation:5,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'HUF', passiveRates:{bonds:0.065,fd:0.06,rental:0.05,gold:0.1,bondsLabel:'Hungarian Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        RON: { flag:'🇷🇴', symbol:'lei', name:'Romanian Leu',       country:'Romania',        locale:'ro-RO', decimals:2, inflation:6,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'RON', passiveRates:{bonds:0.06,fd:0.055,rental:0.05,gold:0.1,bondsLabel:'Romanian Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        TRY: { flag:'🇹🇷', symbol:'₺',  name:'Turkish Lira',       country:'Turkey',         locale:'tr-TR', decimals:0, inflation:50, sciThreshold:1e12,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'TRY', passiveRates:{bonds:0.15,fd:0.16,rental:0.06,gold:0.2,bondsLabel:'Turkish Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        // ── Americas ─────────────────────────────────────────────────
+        BRL: { flag:'🇧🇷', symbol:'R$',  name:'Brazilian Real',     country:'Brazil',         locale:'pt-BR', decimals:2, inflation:5,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'BRL', passiveRates:{bonds:0.12,fd:0.115,rental:0.06,gold:0.12,bondsLabel:'Tesouro Bonds',fdLabel:'CDB / Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        MXN: { flag:'🇲🇽', symbol:'$',   name:'Mexican Peso',       country:'Mexico',         locale:'es-MX', decimals:2, inflation:5,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'MXN', passiveRates:{bonds:0.075,fd:0.07,rental:0.06,gold:0.11,bondsLabel:'CETES Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        COP: { flag:'🇨🇴', symbol:'$',   name:'Colombian Peso',     country:'Colombia',       locale:'es-CO', decimals:0, inflation:7,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'COP', passiveRates:{bonds:0.08,fd:0.08,rental:0.07,gold:0.12,bondsLabel:'TES Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        CLP: { flag:'🇨🇱', symbol:'$',   name:'Chilean Peso',       country:'Chile',          locale:'es-CL', decimals:0, inflation:4,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'CLP', passiveRates:{bonds:0.05,fd:0.05,rental:0.055,gold:0.1,bondsLabel:'BCU Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        ARS: { flag:'🇦🇷', symbol:'$',   name:'Argentine Peso',     country:'Argentina',      locale:'es-AR', decimals:0, inflation:120,sciThreshold:1e12,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'ARS', passiveRates:{bonds:0.25,fd:0.28,rental:0.06,gold:0.4,bondsLabel:'LEBAC Bonds',fdLabel:'Plazo Fijo',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        PEN: { flag:'🇵🇪', symbol:'S/',  name:'Peruvian Sol',       country:'Peru',           locale:'es-PE', decimals:2, inflation:4,  sciThreshold:1e15,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'PEN', passiveRates:{bonds:0.06,fd:0.06,rental:0.06,gold:0.1,bondsLabel:'Peru Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        // ── Central Asia ──────────────────────────────────────────────
+        KZT: { flag:'🇰🇿', symbol:'₸',  name:'Kazakhstani Tenge',  country:'Kazakhstan',     locale:'kk-KZ', decimals:0, inflation:9,  sciThreshold:1e12,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'KZT', passiveRates:{bonds:0.12,fd:0.12,rental:0.07,gold:0.15,bondsLabel:'Govt Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+        UZS: { flag:'🇺🇿', symbol:"so'm",name:'Uzbekistani Soʻm',   country:'Uzbekistan',     locale:'uz-UZ', decimals:0, inflation:11, sciThreshold:1e12,
+               units:[{min:1e9,label:'B',div:1e9},{min:1e6,label:'M',div:1e6},{min:1e3,label:'K',div:1e3}],
+               chartLabel:'UZS', passiveRates:{bonds:0.18,fd:0.19,rental:0.08,gold:0.18,bondsLabel:'Govt Bonds',fdLabel:'Fixed Deposit',rentalLabel:'Rental Yield',goldLabel:'Gold'} },
+    };
+
+    let activeCurrency = 'USD';
+
+    function getCurrency() { return CURRENCIES[activeCurrency]; }
+
+    /* ─── USD CONVERSION ─── */
+    let usdConversionActive = false;
+    let usdRateCache = {};   // { code: { rate, timestamp, source } }
+    const USD_CACHE_TTL = 60 * 60 * 1000; // 1 hour
+
+    // Currencies that are already USD — no conversion needed
+    const IS_USD = ['USD'];
+
+    async function fetchUsdRate(fromCode) {
+        // Return 1 if already USD
+        if (IS_USD.includes(fromCode)) return { rate: 1, source: 'base' };
+
+        // Return cached rate if fresh
+        const cached = usdRateCache[fromCode];
+        if (cached && (Date.now() - cached.timestamp) < USD_CACHE_TTL) {
+            return { rate: cached.rate, source: cached.source };
         }
-        if (abs >= 10_000_000) return `PKR ${(v / 10_000_000).toFixed(2)} Cr`;
-        if (abs >= 100_000)    return `PKR ${(v / 100_000).toFixed(2)} L`;
-        return `PKR ${v.toLocaleString('en-US')}`;
+
+        // Try Frankfurter first (ECB rates, covers major currencies)
+        try {
+            const res = await fetch(`https://api.frankfurter.app/latest?from=${fromCode}&to=USD`, { signal: AbortSignal.timeout(4000) });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.rates && data.rates.USD) {
+                    const rate = data.rates.USD;
+                    usdRateCache[fromCode] = { rate, timestamp: Date.now(), source: 'frankfurter' };
+                    return { rate, source: 'ECB / Frankfurter' };
+                }
+            }
+        } catch(e) {}
+
+        // Fallback: open.er-api.com (covers 170+ currencies including PKR, NGN, etc.)
+        try {
+            const res = await fetch(`https://open.er-api.com/v6/latest/USD`, { signal: AbortSignal.timeout(5000) });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.rates && data.rates[fromCode]) {
+                    const rate = 1 / data.rates[fromCode];
+                    usdRateCache[fromCode] = { rate, timestamp: Date.now(), source: 'er-api' };
+                    return { rate, source: 'ExchangeRate-API' };
+                }
+            }
+        } catch(e) {}
+
+        // Second fallback: exchangerate.host
+        try {
+            const res = await fetch(`https://api.exchangerate.host/latest?base=${fromCode}&symbols=USD`, { signal: AbortSignal.timeout(5000) });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.rates && data.rates.USD) {
+                    const rate = data.rates.USD;
+                    usdRateCache[fromCode] = { rate, timestamp: Date.now(), source: 'exchangerate.host' };
+                    return { rate, source: 'exchangerate.host' };
+                }
+            }
+        } catch(e) {}
+
+        return null; // all APIs failed
+    }
+
+    function formatUsd(value) {
+        if (value >= 1e12) return `$${(value/1e12).toFixed(2)}T`;
+        if (value >= 1e9)  return `$${(value/1e9).toFixed(2)}B`;
+        if (value >= 1e6)  return `$${(value/1e6).toFixed(2)}M`;
+        if (value >= 1e3)  return `$${(value/1e3).toFixed(1)}K`;
+        return `$${Math.round(value).toLocaleString('en-US')}`;
+    }
+
+    async function toggleUsdConversion() {
+        // If already USD, do nothing
+        if (activeCurrency === 'USD') {
+            showToast('Already displaying in USD');
+            return;
+        }
+
+        usdConversionActive = !usdConversionActive;
+        const btn       = document.getElementById('usdToggleBtn');
+        const label     = document.getElementById('usdToggleLabel');
+        const icon      = document.getElementById('usdToggleIcon');
+        const valueRow  = document.getElementById('usdValueRow');
+
+        if (!usdConversionActive) {
+            valueRow.style.display = 'none';
+            label.textContent = 'Show in USD';
+            icon.textContent  = '💱';
+            btn.style.background = 'rgba(0,0,0,0.18)';
+            return;
+        }
+
+        // Activate — show loading state
+        label.textContent = 'Fetching rate…';
+        icon.textContent  = '⏳';
+        btn.style.background = 'rgba(0,0,0,0.28)';
+
+        const result = await fetchUsdRate(activeCurrency);
+
+        if (!result) {
+            usdConversionActive = false;
+            label.textContent = 'Show in USD';
+            icon.textContent  = '💱';
+            btn.style.background = 'rgba(0,0,0,0.18)';
+            showToast('Could not fetch live rate. Check your connection.');
+            return;
+        }
+
+        label.textContent = 'Showing in USD';
+        icon.textContent  = '✓';
+        btn.style.background = 'rgba(0,0,0,0.30)';
+        valueRow.style.display = 'block';
+
+        updateUsdDisplay(result);
+    }
+
+    function updateUsdDisplay(result) {
+        if (!usdConversionActive || !result) return;
+        const wealth = lastWealth;
+        if (!wealth) return;
+
+        const usdValue = wealth * result.rate;
+        document.getElementById('usdValueDisplay').textContent = formatUsd(usdValue);
+        document.getElementById('usdRateInfo').textContent     = `1 ${activeCurrency} = ${result.rate < 0.01 ? result.rate.toFixed(6) : result.rate < 1 ? result.rate.toFixed(4) : result.rate.toFixed(4)} USD`;
+        document.getElementById('usdRateSource').textContent   = `Live rate · ${result.source}`;
+    }
+
+    async function refreshUsdIfActive() {
+        if (!usdConversionActive || activeCurrency === 'USD') return;
+        const result = await fetchUsdRate(activeCurrency);
+        if (result) updateUsdDisplay(result);
+    }
+
+    // Hide USD row when currency changes or results recalculate
+    function resetUsdConversion() {
+        usdConversionActive = false;
+        const valueRow = document.getElementById('usdValueRow');
+        const label    = document.getElementById('usdToggleLabel');
+        const icon     = document.getElementById('usdToggleIcon');
+        const btn      = document.getElementById('usdToggleBtn');
+        if (valueRow) valueRow.style.display = 'none';
+        if (label)    label.textContent = 'Show in USD';
+        if (icon)     icon.textContent  = '💱';
+        if (btn)      btn.style.background = 'rgba(0,0,0,0.18)';
+    }
+
+    // Hide USD button entirely when currency is already USD
+    function syncUsdButton() {
+        const row = document.getElementById('usdConvertRow');
+        if (row) row.style.display = activeCurrency === 'USD' ? 'none' : 'flex';
+    }
+    const CURRENCY_GROUPS = [
+        { label: '🌍 Major',          codes: ['USD','EUR','GBP','JPY','CHF','CAD','AUD','SGD','NZD'] },
+        { label: '🌙 Middle East',     codes: ['AED','SAR','KWD','QAR','BHD','OMR','ILS'] },
+        { label: '🌏 South Asia',      codes: ['PKR','INR','BDT','LKR'] },
+        { label: '🌏 East & SE Asia',  codes: ['CNY','HKD','KRW','TWD','MYR','IDR','THB','PHP','VND'] },
+        { label: '🌍 Africa',          codes: ['ZAR','NGN','KES','EGP','GHS','MAD'] },
+        { label: '🌍 Europe',          codes: ['SEK','NOK','DKK','PLN','CZK','HUF','RON','TRY'] },
+        { label: '🌎 Americas',        codes: ['BRL','MXN','COP','CLP','ARS','PEN'] },
+        { label: '🌏 Central Asia',    codes: ['KZT','UZS'] },
+    ];
+
+    function renderCurrencyList(filter = '') {
+        const list = document.getElementById('currencyList');
+        const q = filter.toLowerCase().trim();
+        let html = '';
+        let anyResult = false;
+
+        CURRENCY_GROUPS.forEach(group => {
+            const matching = group.codes.filter(code => {
+                if (!CURRENCIES[code]) return false;
+                if (!q) return true;
+                const c = CURRENCIES[code];
+                return code.toLowerCase().includes(q)
+                    || c.name.toLowerCase().includes(q)
+                    || c.country.toLowerCase().includes(q)
+                    || c.symbol.toLowerCase().includes(q);
+            });
+            if (!matching.length) return;
+            anyResult = true;
+
+            if (!q) {
+                html += `<div style="padding:8px 20px 4px;font-size:10px;font-weight:700;color:#333;letter-spacing:1px;text-transform:uppercase;">${group.label}</div>`;
+            }
+            matching.forEach(code => {
+                const c = CURRENCIES[code];
+                const isActive = code === activeCurrency;
+                html += `
+                <div onclick="selectCurrency('${code}')" style="display:flex;align-items:center;gap:14px;padding:11px 20px;cursor:pointer;transition:background 0.12s;border-radius:0;${isActive ? 'background:#0f1a00;' : ''}"
+                    onmouseover="this.style.background='${isActive ? '#0f1a00' : '#111'}'"
+                    onmouseout="this.style.background='${isActive ? '#0f1a00' : 'transparent'}'">
+                    <span style="font-size:24px;line-height:1;flex-shrink:0;">${c.flag}</span>
+                    <div style="flex:1;min-width:0;">
+                        <div style="display:flex;align-items:baseline;gap:8px;">
+                            <span style="font-size:14px;font-weight:700;color:${isActive ? '#bef202' : '#fff'};">${code}</span>
+                            <span style="font-size:11px;color:#444;font-weight:500;">${c.symbol}</span>
+                        </div>
+                        <div style="font-size:12px;color:#555;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.name}</div>
+                    </div>
+                    <div style="font-size:11px;color:#333;text-align:right;flex-shrink:0;">${c.country}</div>
+                    ${isActive ? '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3.5" stroke="#bef202" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}
+                </div>`;
+            });
+        });
+
+        if (!anyResult) {
+            html = `<div style="padding:40px 20px;text-align:center;color:#333;font-size:13px;">No currencies found for "<span style="color:#555">${filter}</span>"</div>`;
+        }
+
+        list.innerHTML = html;
+    }
+
+    function toggleCurrencyPicker() {
+        const panel = document.getElementById('currencyPickerPanel');
+        const isOpen = panel.style.display === 'flex';
+        if (isOpen) {
+            closeCurrencyPicker();
+        } else {
+            panel.style.display = 'flex';
+            document.getElementById('currencyPickerChevron').style.transform = 'rotate(180deg)';
+            document.getElementById('currencyPickerTrigger').style.borderColor = '#bef202';
+            document.getElementById('currencySearch').value = '';
+            renderCurrencyList();
+            setTimeout(() => document.getElementById('currencySearch').focus(), 100);
+            document.body.style.overflow = 'hidden';
+            // Resize panel when mobile keyboard opens/closes
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', onViewportResize);
+            }
+        }
+    }
+
+    function onViewportResize() {
+        const panel = document.getElementById('currencyPickerPanel');
+        if (!panel || panel.style.display !== 'flex') return;
+        const vh = window.visualViewport.height;
+        panel.style.height = vh + 'px';
+        panel.style.top    = window.visualViewport.offsetTop + 'px';
+    }
+
+    function closeCurrencyPicker() {
+        const panel = document.getElementById('currencyPickerPanel');
+        panel.style.display = 'none';
+        panel.style.height  = '';
+        panel.style.top     = '';
+        document.getElementById('currencyPickerChevron').style.transform = 'rotate(0deg)';
+        document.getElementById('currencyPickerTrigger').style.borderColor = '#2a2a2a';
+        document.body.style.overflow = '';
+        if (window.visualViewport) {
+            window.visualViewport.removeEventListener('resize', onViewportResize);
+        }
+    }
+
+    function filterCurrencies(val) {
+        renderCurrencyList(val);
+    }
+
+    function selectCurrency(code) {
+        closeCurrencyPicker();
+        onCurrencyChange(code);
+    }
+
+    function updateCurrencyTrigger() {
+        const c = getCurrency();
+        document.getElementById('currencyPickerFlag').textContent = c.flag;
+        document.getElementById('currencyPickerCode').textContent = activeCurrency;
+        document.getElementById('currencyPickerName').textContent = c.name;
+    }
+
+    function onCurrencyChange(code) {
+        activeCurrency = code;
+        const c = getCurrency();
+        updateCurrencyTrigger();
+        // Update FIRE inflation hint
+        const inflField = document.getElementById('expenseIncrease');
+        const inflHint  = document.getElementById('inflationHint');
+        if (inflField) inflField.value = c.inflation;
+        if (inflHint)  inflHint.innerHTML = `💡 Defaulting to <strong style="color:#bef202">${c.inflation}%</strong> — the historical average annual inflation rate in ${c.country}. Enter 0 if you want to ignore inflation.`;
+        // Sync inflation toggle rate to country historical average
+        const customInfl = document.getElementById('customInflationRate');
+        const inflHint2  = document.getElementById('inflDefaultHint');
+        if (customInfl) customInfl.value = c.inflation;
+        if (inflHint2)  inflHint2.textContent = `(${c.country} historical avg)`;
+        updateCurrencyLabels();
+        syncUsdButton();
+        resetUsdConversion();
+        if (lastWealthData.length) calculateWealth();
+    }
+
+    function updateCurrencyLabels() {
+        const c  = getCurrency();
+        const pr = c.passiveRates;
+        // Input labels
+        document.querySelectorAll('.currency-label').forEach(el => el.textContent = c.symbol);
+        // Passive income card labels with rates
+        const pct = r => `${(r * 100 % 1 === 0) ? (r * 100).toFixed(0) : (r * 100).toFixed(1)}%`;
+        const bondsEl  = document.getElementById('bondsLabel');
+        const fdEl     = document.getElementById('fdLabel');
+        const rentalEl = document.getElementById('rentalLabel');
+        const goldEl   = document.getElementById('goldLabel');
+        if (bondsEl)  bondsEl.textContent  = `${pr.bondsLabel} (${pct(pr.bonds)})`;
+        if (fdEl)     fdEl.textContent     = `${pr.fdLabel} (${pct(pr.fd)})`;
+        if (rentalEl) rentalEl.textContent = `${pr.rentalLabel} (${pct(pr.rental)})`;
+        if (goldEl)   goldEl.textContent   = `${pr.goldLabel} (${pct(pr.gold)})`;
+        // Chart Y-axis label
+        if (chart) {
+            chart.options.scales.y.title.text = c.chartLabel;
+            chart.update('none');
+        }
+    }
+
+    function formatCurrencyFull(value) {
+        // Always shows the full number with locale commas — no K/L/M/Cr abbreviation
+        const c   = getCurrency();
+        if (!isFinite(value) || isNaN(value)) return `${c.symbol} —`;
+        const v   = c.decimals === 0 ? Math.round(value) : value;
+        return `${c.symbol} ${Math.abs(v).toLocaleString(c.locale, { minimumFractionDigits: 0, maximumFractionDigits: c.decimals })}`;
+    }
+
+    function formatCurrency(value) {
+        const c = getCurrency();
+        if (!isFinite(value) || isNaN(value)) return `${c.symbol} —`;
+        const v   = c.decimals === 0 ? Math.round(value) : value;
+        const abs = Math.abs(v);
+
+        // Scientific notation for huge numbers
+        if (abs >= c.sciThreshold) {
+            const exp   = Math.floor(Math.log10(abs));
+            const coeff = (abs / Math.pow(10, exp)).toFixed(2);
+            return `${c.symbol} ${coeff}×10${toSuperscript(exp)}`;
+        }
+
+        // Unit abbreviations
+        for (const u of c.units) {
+            if (abs >= u.min) {
+                return `${c.symbol} ${(v / u.div).toFixed(2)} ${u.label}`;
+            }
+        }
+
+        // Plain number with locale-aware comma placement
+        return `${c.symbol} ${v.toLocaleString(c.locale, { minimumFractionDigits: 0, maximumFractionDigits: c.decimals })}`;
     }
 
     function compactValue(v) {
-        if (v >= 10_000_000) return `${(v / 10_000_000).toFixed(0)} Cr`;
-        if (v >= 100_000)    return `${(v / 100_000).toFixed(0)} L`;
-        if (v >= 1_000)      return `${(v / 1_000).toFixed(0)}K`;
-        return `${v}`;
+        const c = getCurrency();
+        const abs = Math.abs(v);
+        for (const u of c.units) {
+            if (abs >= u.min) return `${(v / u.div).toFixed(1)} ${u.label}`;
+        }
+        return v >= 1000 ? `${(v / 1000).toFixed(0)}K` : `${Math.round(v)}`;
     }
 
     /* ─── INCOME DISPLAY ─── */
@@ -1654,10 +2223,11 @@
         if (labelEl)  labelEl.textContent  = pct + '%';
 
         document.getElementById('yourReturnIncome').textContent = formatCurrency(w * userRate * mul);
-        document.getElementById('fdIncome').textContent         = formatCurrency(w * 0.08 * mul);
-        document.getElementById('dividendIncome').textContent   = formatCurrency(w * 0.07 * mul);
-        document.getElementById('rentalIncome').textContent     = formatCurrency(w * 0.06 * mul);
-        document.getElementById('goldIncome').textContent       = formatCurrency(w * 0.09 * mul);
+        const pr = getCurrency().passiveRates;
+        document.getElementById('fdIncome').textContent         = formatCurrency(w * pr.fd     * mul);
+        document.getElementById('dividendIncome').textContent   = formatCurrency(w * pr.bonds  * mul);
+        document.getElementById('rentalIncome').textContent     = formatCurrency(w * pr.rental * mul);
+        document.getElementById('goldIncome').textContent       = formatCurrency(w * pr.gold   * mul);
         updateCustomIncome();
     }
 
@@ -1756,7 +2326,9 @@
         ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
         // Reset fireMultiplier default
         document.getElementById('fireMultiplier').value = '25';
-        document.getElementById('expenseIncrease').value = '10';
+        document.getElementById('expenseIncrease').value = getCurrency().inflation;
+        const ci = document.getElementById('customInflationRate');
+        if (ci) ci.value = getCurrency().inflation;
         document.getElementById('resultsSection').style.display      = 'none';
         document.getElementById('chartSection').style.display        = 'none';
         document.getElementById('inflationToggleSection').style.display = 'none';
@@ -1982,6 +2554,7 @@
             lastWealthData   = wData;
             lastContribData  = cData;
             lastFireLine     = null;
+            resetUsdConversion();
 
             // Apply inflation if toggled
             const infl    = document.getElementById('inflationAdjusted').checked;
@@ -2129,7 +2702,7 @@
                         ticks: { color: '#555', font: { size: 11 }, maxTicksLimit: 10 }
                     },
                     y: {
-                        title: { display: true, text: 'PKR', color: '#555', font: { size: 12, weight: '700' }, padding: { bottom: 8 } },
+                        title: { display: true, text: getCurrency().chartLabel, color: '#555', font: { size: 12, weight: '700' }, padding: { bottom: 8 } },
                         grid:  { color: 'rgba(255,255,255,0.05)' },
                         ticks: { color: '#555', font: { size: 11 }, maxTicksLimit: 7, callback: v => compactValue(v) }
                     }
@@ -2600,10 +3173,12 @@
     let popEditIndex = -1;
 
     function compactSip(v) {
-        if (v >= 10_000_000) return `${(v / 10_000_000).toFixed(2)} Cr`;
-        if (v >= 100_000)    return `${(v / 100_000).toFixed(2)} L`;
-        if (v >= 1_000)      return `${(v / 1_000).toFixed(1)}K`;
-        return `${Math.round(v)}`;
+        const c = getCurrency();
+        const abs = Math.abs(v);
+        for (const u of c.units) {
+            if (abs >= u.min) return `${(v / u.div).toFixed(2)} ${u.label}`;
+        }
+        return `${Math.round(v).toLocaleString(c.locale)}`;
     }
 
     function openSipModal() {
@@ -2778,8 +3353,8 @@
     }
 
     function showSipAccumWarning(totalCustom, limit) {
-        document.getElementById('sipAccumWarnTotal').textContent = formatCurrency(totalCustom);
-        document.getElementById('sipAccumWarnLimit').textContent = formatCurrency(limit);
+        document.getElementById('sipAccumWarnTotal').textContent = formatCurrencyFull(totalCustom);
+        document.getElementById('sipAccumWarnLimit').textContent = formatCurrencyFull(limit);
         document.getElementById('sipAccumWarning').style.display = 'flex';
     }
 
@@ -2803,8 +3378,8 @@
     }
 
     function showSipLimitWarning(monthly, stopAmt) {
-        document.getElementById('sipLimitWarnAmt').textContent    = formatCurrency(monthly);
-        document.getElementById('sipLimitWarnLimit').textContent  = formatCurrency(stopAmt);
+        document.getElementById('sipLimitWarnAmt').textContent    = formatCurrencyFull(monthly);
+        document.getElementById('sipLimitWarnLimit').textContent  = formatCurrencyFull(stopAmt);
         document.getElementById('sipLimitWarnPending').value      = monthly;
         document.getElementById('sipLimitWarning').style.display  = 'flex';
     }
@@ -2869,7 +3444,71 @@
 
 
 
-    /* ─── TOAST ─── */
+    /* ─── TOOLTIP POSITIONING ─── */
+    // Position tooltips using fixed coords so they never overflow the viewport
+    document.addEventListener('DOMContentLoaded', () => {
+        // Initialise currency labels to match default selection
+        updateCurrencyLabels();
+        updateCurrencyTrigger();
+        syncUsdButton();
+        // Set initial inflation toggle hint
+        const c0 = getCurrency();
+        const h0 = document.getElementById('inflDefaultHint');
+        if (h0) h0.textContent = `(${c0.country} historical avg)`;
+        // Close picker when clicking backdrop
+        document.getElementById('currencyPickerPanel').addEventListener('click', e => {
+            if (e.target === document.getElementById('currencyPickerPanel')) closeCurrencyPicker();
+        });
+        // Close picker on Escape
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') closeCurrencyPicker();
+        });
+        document.querySelectorAll('.info-icon').forEach(icon => {
+            const tip = icon.querySelector('.tooltip');
+            if (!tip) return;
+
+            function positionTip() {
+                const iconRect = icon.getBoundingClientRect();
+                const tipW = tip.offsetWidth || 220;
+                const tipH = tip.offsetHeight || 80;
+                const gap  = 8; // px gap between icon top and tooltip bottom
+
+                // Center tooltip horizontally on icon
+                let left = iconRect.left + iconRect.width / 2 - tipW / 2;
+                let top  = iconRect.top - tipH - gap;
+
+                // Clamp horizontally within viewport with 12px margin
+                left = Math.max(12, Math.min(left, window.innerWidth - tipW - 12));
+
+                // If tooltip would go above viewport, flip below the icon
+                if (top < 8) top = iconRect.bottom + gap;
+
+                tip.style.left = left + 'px';
+                tip.style.top  = top  + 'px';
+            }
+
+            icon.addEventListener('mouseenter', () => {
+                tip.style.display = 'block';
+                positionTip();
+            });
+            icon.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const isVisible = tip.style.display === 'block';
+                // Hide all other tooltips
+                document.querySelectorAll('.tooltip').forEach(t => t.style.display = 'none');
+                if (!isVisible) { tip.style.display = 'block'; positionTip(); }
+            }, { passive: false });
+            icon.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+        });
+
+        // Tap anywhere else to close tooltips on mobile
+        document.addEventListener('touchstart', (e) => {
+            if (!e.target.closest('.info-icon')) {
+                document.querySelectorAll('.tooltip').forEach(t => t.style.display = 'none');
+            }
+        });
+    });
+
     let toastTimer = null;
     function showToast(msg) {
         const bar = document.getElementById('toastBar');
@@ -3093,7 +3732,7 @@
             <div>
                 <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
                     <span style="font-size:12px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Total Invested</span>
-                    <span style="font-size:14px;font-weight:700;color:#fff;" id="bkModalContrib">PKR 0</span>
+                    <span style="font-size:14px;font-weight:700;color:#fff;" id="bkModalContrib">—</span>
                 </div>
                 <div style="background:#1a1a1a;border-radius:6px;height:8px;overflow:hidden;">
                     <div id="bkContribBar" style="height:100%;background:#50c878;border-radius:6px;transition:width 0.8s ease;width:0%"></div>
@@ -3103,7 +3742,7 @@
             <div>
                 <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
                     <span style="font-size:12px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Investment Returns</span>
-                    <span style="font-size:14px;font-weight:700;color:#bef202;" id="bkModalProfit">PKR 0</span>
+                    <span style="font-size:14px;font-weight:700;color:#bef202;" id="bkModalProfit">—</span>
                 </div>
                 <div style="background:#1a1a1a;border-radius:6px;height:8px;overflow:hidden;">
                     <div id="bkProfitBar" style="height:100%;background:#bef202;border-radius:6px;transition:width 0.8s ease;width:0%"></div>
@@ -3113,7 +3752,7 @@
             <div style="border-top:1px solid #1e1e1e;padding-top:16px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;">
                     <span style="font-size:12px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Total Wealth</span>
-                    <span style="font-size:22px;font-weight:900;color:#fff;letter-spacing:-0.8px;" id="bkModalWealth">PKR 0</span>
+                    <span style="font-size:22px;font-weight:900;color:#fff;letter-spacing:-0.8px;" id="bkModalWealth">—</span>
                 </div>
             </div>
         </div>
